@@ -1,0 +1,21 @@
+{
+  "name": "100 Days Habit Challenge",
+  "short_name": "100Days",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f2027",
+  "theme_color": "#0f2027",
+  "description": "A beautiful 100 days habit tracking application.",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/00f2fe/ffffff?text=100",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/00f2fe/ffffff?text=100",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

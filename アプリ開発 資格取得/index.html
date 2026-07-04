@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>資格取得アプリ - Antigravity</title>
+    <style>
+        :root {
+            --bg-base: #f2f2f7;
+            --bg-card: rgba(255, 255, 255, 0.75);
+            --text-main: #1c1c1e;
+            --text-muted: #8e8e93;
+            --border-glass: rgba(255, 255, 255, 0.5);
+            
+            --accent: #2c2c2e; /* Dark grey accent */
+            --danger: #ff3b30;
+            --danger-bg: rgba(255, 59, 48, 0.1);
+            --success: #34c759;
+            --success-bg: rgba(52, 199, 89, 0.1);
+            --blue: #007aff;
+            
+            --tab-h: 80px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            padding-bottom: var(--tab-h);
+            line-height: 1.5;
+            overflow-x: hidden;
+            /* Subtle grain or minimal gradient could go here, but pure silver base is cleaner */
+            background-image: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            min-height: 100vh;
+        }
+
+        h1, h2, h3 { font-weight: 600; letter-spacing: -0.5px; }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Top Bar */
+        header {
+            padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+            text-align: center;
+        }
+        header h1 {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            padding: 0 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard specific */
+        .countdown {
+            font-size: 2.5rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+        .countdown .label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.4);
+            border: 1px solid var(--border-glass);
+        }
+        .stat-box .val {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .stat-box .lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .status-banner {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 16px;
+            font-weight: 600;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .status-danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid rgba(255,59,48,0.2);
+        }
+        .status-success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid rgba(52,199,89,0.2);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 12px;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .progress-target {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--danger);
+            z-index: 10;
+        }
+
+        /* Task List */
+        .task-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .focus-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .chapter-group {
+            margin-bottom: 20px;
+        }
+        .chapter-title {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            color: var(--text-muted);
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-glass);
+            transition: all 0.2s;
+        }
+        .task-item:active {
+            transform: scale(0.98);
+        }
+        .task-item.completed {
+            opacity: 0.6;
+        }
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            margin-right: 16px;
+            position: relative;
+        }
+        .task-item.completed .checkbox {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+        .task-item.completed .checkbox::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .task-title {
+            font-weight: 500;
+            flex-grow: 1;
+        }
+        
+        .focus-highlight {
+            border-left: 4px solid var(--blue);
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        /* Review List */
+        .review-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--blue);
+            color: white;
+            margin-right: 12px;
+        }
+
+        /* Settings */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.8);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            margin-top: 12px;
+        }
+
+        /* Bottom Tab Navigation */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--tab-h);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 100;
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .tab-item.active {
+            color: var(--accent);
+        }
+        .tab-icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Antigravity</h1>
+    </header>
+
+    <!-- Dashboard View -->
+    <main id="view-dashboard" class="view active">
+        <div class="glass-card">
+            <div class="countdown">
+                <span class="label">試験まで残り</span>
+                <div id="countdown-timer">--日 --:--:--</div>
+            </div>
+            
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+                <div id="progress-target" class="progress-target"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; color:var(--text-muted);">
+                <span>現在: <span id="val-progress-pct">0</span>%</span>
+                <span style="color:var(--danger)">目標: <span id="val-target-pct">0</span>%</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="glass-card stat-box">
+                <div class="val" id="val-daily-quota">-</div>
+                <div class="lbl">1日あたりのノルマ</div>
+            </div>
+            <div class="glass-card stat-box">
+                <div class="val" id="val-remaining-tasks">-</div>
+                <div class="lbl">残りタスク数</div>
+            </div>
+        </div>
+
+        <div id="status-banner" class="status-banner status-success">
+            設定を完了してください
+        </div>
+    </main>
+
+    <!-- Tasks View -->
+    <main id="view-tasks" class="view">
+        <div class="task-controls glass-card">
+            <h2 style="font-size:1.2rem;">タスクツリー</h2>
+            <div class="focus-toggle">
+                <span>Focus Mode</span>
+                <label class="switch">
+                    <input type="checkbox" id="focus-mode-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div id="task-list-container">
+            <!-- Task contents generated by JS -->
+        </div>
+    </main>
+
+    <!-- Review View -->
+    <main id="view-review" class="view">
+        <div class="glass-card" style="margin-bottom:20px;">
+            <h2 style="font-size:1.2rem; margin-bottom:8px;">忘却曲線リカバリー</h2>
+            <p style="font-size:0.9rem; color:var(--text-muted);">完了から1日・3日・7日経過したタスクが表示されます。今日復習すべき項目です。</p>
+        </div>
+        <div id="review-list-container">
+            <!-- Review items generated by JS -->
+        </div>
+    </main>
+
+    <!-- Settings View -->
+    <main id="view-settings" class="view">
+        <div class="glass-card">
+            <h2 style="font-size:1.2rem; margin-bottom: 20px;">プロジェクト設定</h2>
+            
+            <div class="form-group">
+                <label>試験日 (Dead-line)</label>
+                <input type="date" id="input-exam-date" class="input-field">
+            </div>
+
+            <button class="btn" onclick="saveSettings()">設定を保存</button>
+            <button class="btn btn-outline" onclick="loadSampleData()">サンプルデータを生成</button>
+            <button class="btn btn-outline" onclick="clearData()" style="color:var(--danger); border-color:var(--danger);">全データを初期化</button>
+        </div>
+    </main>
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+        <a href="#" class="tab-item active" data-target="view-dashboard">
+            <div class="tab-icon">⏱</div>
+            <span>予測</span>
+        </a>
+        <a href="#" class="tab-item" data-target="view-tasks">
+            <div class="tab-icon">📋</div>
+            <span>タスク</span>
+        </a>
+        <a href="#" class="tab-item" data-target="view-review">
+            <div class="tab-icon">🧠</div>
+            <span>復習</span>
+        </a>
+        <a href="#" class="tab-item" data-target="view-settings">
+            <div class="tab-icon">⚙️</div>
+            <span>設定</span>
+        </a>
+    </nav>
+
+    <script>
+        // Data Structure
+        let appData = {
+            examDate: null,
+            startDate: null,
+            tasks: []
+        };
+
+        // Initialize App
+        function init() {
+            loadData();
+            setupTabs();
+            setupFocusToggle();
+            
+            if (!appData.startDate && appData.tasks.length > 0) {
+                appData.startDate = new Date().toISOString();
+                saveData();
+            }
+
+            if (appData.examDate) {
+                document.getElementById('input-exam-date').value = appData.examDate.split('T')[0];
+            }
+
+            // Start loop
+            setInterval(updateEngine, 1000);
+            updateEngine();
+            renderTasks();
+            renderReviews();
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('antigravity_data');
+            if (saved) {
+                appData = JSON.parse(saved);
+            }
+        }
+        function saveData() {
+            localStorage.setItem('antigravity_data', JSON.stringify(appData));
+            updateEngine();
+        }
+
+        // Tab Navigation
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab-item');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                    const targetId = tab.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+
+                    // Re-render when switching views
+                    if (targetId === 'view-tasks') renderTasks();
+                    if (targetId === 'view-review') renderReviews();
+                });
+            });
+        }
+
+        // Focus Mode Toggle
+        let isFocusMode = false;
+        function setupFocusToggle() {
+            const toggle = document.getElementById('focus-mode-toggle');
+            toggle.addEventListener('change', (e) => {
+                isFocusMode = e.target.checked;
+                renderTasks();
+            });
+        }
+
+        // Phase 1: Prediction Engine
+        function updateEngine() {
+            if (!appData.examDate || appData.tasks.length === 0) {
+                document.getElementById('countdown-timer').innerText = "未設定";
+                return;
+            }
+
+            const now = new Date();
+            const exam = new Date(appData.examDate);
+            const start = new Date(appData.startDate || now);
+            
+            // Countdown Calculation
+            const diffMs = exam - now;
+            if (diffMs <= 0) {
+                document.getElementById('countdown-timer').innerText = "0日 00:00:00";
+                return;
+            }
+
+            const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+            const m = Math.floor((diffMs / 1000 / 60) % 60);
+            const s = Math.floor((diffMs / 1000) % 60);
+            
+            document.getElementById('countdown-timer').innerText = 
+                `${d}日 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+            // Progress Logic
+            const totalTasks = appData.tasks.length;
+            const completedTaskCount = appData.tasks.filter(t => t.completedAt).length;
+            const remainingTaskCount = totalTasks - completedTaskCount;
+            
+            // Days maths
+            // We use precision (float) days for prediction to be exact
+            const totalDaysPrecision = (exam - start) / (1000 * 60 * 60 * 24);
+            const elapsedDaysPrecision = (now - start) / (1000 * 60 * 60 * 24);
+            const remainingDaysPrecision = (exam - now) / (1000 * 60 * 60 * 24);
+
+            // Daily Quota based strictly on remaining days vs remaining tasks
+            let targetDailyQuota = 0;
+            if (remainingDaysPrecision > 0) {
+                targetDailyQuota = remainingTaskCount / remainingDaysPrecision;
+            }
+
+            // Set UI values
+            document.getElementById('val-remaining-tasks').innerText = remainingTaskCount;
+            document.getElementById('val-daily-quota').innerText = targetDailyQuota > 0 ? targetDailyQuota.toFixed(1) + " 件" : "0 件";
+
+            // Progress Bar and Prediction Indicator
+            const actualPct = (completedTaskCount / totalTasks) * 100;
+            let targetPct = 0;
+            if (totalDaysPrecision > 0) {
+                // How much SHOULD be done by now based on linear pace
+                targetPct = (elapsedDaysPrecision / totalDaysPrecision) * 100;
+                if (targetPct > 100) targetPct = 100;
+                if (targetPct < 0) targetPct = 0;
+            }
+
+            document.getElementById('progress-fill').style.width = `${actualPct}%`;
+            document.getElementById('progress-target').style.left = `${targetPct}%`;
+            
+            document.getElementById('val-progress-pct').innerText = actualPct.toFixed(1);
+            document.getElementById('val-target-pct').innerText = targetPct.toFixed(1);
+
+            // Status Signal (Red / Green)
+            const banner = document.getElementById('status-banner');
+            document.documentElement.style.setProperty('--daily-quota-val', targetDailyQuota);
+
+            if (actualPct < targetPct && remainingTaskCount > 0) { // Behind pace
+                // Calculate how many tasks behind
+                const expectedTasks = (totalTasks * (targetPct / 100));
+                const deficit = Math.ceil(expectedTasks - completedTaskCount);
+                banner.className = "status-banner status-danger";
+                banner.innerHTML = `⚠️ ペース遅延: 今日あと ${deficit} タスク必要`;
+            } else if (remainingTaskCount === 0) {
+                banner.className = "status-banner status-success";
+                banner.innerHTML = `🎉 全タスク完了！試験に向けて万全です。`;
+            } else {
+                banner.className = "status-banner status-success";
+                banner.innerHTML = `✅ 順調なペースで進捗しています`;
+            }
+        }
+
+        // Phase 2: Tasks Manager
+        function renderTasks() {
+            const container = document.getElementById('task-list-container');
+            container.innerHTML = '';
+
+            if (appData.tasks.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--text-muted);">タスクがありません。設定からサンプルデータを追加してください。</div>';
+                return;
+            }
+
+            // Group by chapter
+            const grouped = {};
+            appData.tasks.forEach(t => {
+                if (!grouped[t.chapter]) grouped[t.chapter] = [];
+                grouped[t.chapter].push(t);
+            });
+
+            // Focus Mode calculation
+            let focusIds = new Set();
+            if (isFocusMode) {
+                // Get required daily quota to determine how many to show
+                const now = new Date();
+                const exam = new Date(appData.examDate);
+                const remainingDays = (exam - now) / (1000 * 60 * 60 * 24);
+                const incompleteTasks = appData.tasks.filter(t => !t.completedAt);
+                let quota = Math.ceil(incompleteTasks.length / (remainingDays > 0 ? remainingDays : 1));
+                if (quota < 1 && incompleteTasks.length > 0) quota = 1;
+                
+                // Select top `quota` tasks
+                for (let i = 0; i < Math.min(quota, incompleteTasks.length); i++) {
+                    focusIds.add(incompleteTasks[i].id);
+                }
+            }
+
+            for (const [chapter, tasks] of Object.entries(grouped)) {
+                
+                // If focus mode, filter out chapters that have no focus tasks
+                if (isFocusMode) {
+                    const hasFocus = tasks.some(t => focusIds.has(t.id));
+                    if (!hasFocus) continue;
+                }
+
+                const gDiv = document.createElement('div');
+                gDiv.className = 'chapter-group';
+                gDiv.innerHTML = `<div class="chapter-title">${chapter}</div>`;
+
+                tasks.forEach(task => {
+                    // In focus mode, only show focus items
+                    if (isFocusMode && !focusIds.has(task.id)) return;
+
+                    const tDiv = document.createElement('div');
+                    tDiv.className = `task-item ${task.completedAt ? 'completed' : ''} ${focusIds.has(task.id) ? 'focus-highlight' : ''}`;
+                    tDiv.onclick = () => toggleTask(task.id);
+                    
+                    tDiv.innerHTML = `
+                        <div class="checkbox"></div>
+                        <div class="task-title">${task.title}</div>
+                    `;
+                    gDiv.appendChild(tDiv);
+                });
+
+                container.appendChild(gDiv);
+            }
+        }
+
+        function toggleTask(id) {
+            const task = appData.tasks.find(t => t.id === id);
+            if (task) {
+                task.completedAt = task.completedAt ? null : new Date().toISOString();
+                saveData();
+                renderTasks();
+            }
+        }
+
+        // Phase 3: Forgetting Curve
+        function getCalendarDaysDiff(dateStr) {
+            const date1 = new Date(dateStr);
+            const date2 = new Date();
+            const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+            const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+            return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+        }
+
+        function renderReviews() {
+            const container = document.getElementById('review-list-container');
+            container.innerHTML = '';
+
+            const reviews = appData.tasks.filter(t => {
+                if (!t.completedAt) return false;
+                const diff = getCalendarDaysDiff(t.completedAt);
+                return diff === 1 || diff === 3 || diff === 7;
+            });
+
+            if (reviews.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--text-muted);">本日の復習タスクはありません。休脳日です☕️</div>';
+                return;
+            }
+
+            reviews.forEach(task => {
+                const diff = getCalendarDaysDiff(task.completedAt);
+                const tDiv = document.createElement('div');
+                tDiv.className = 'task-item';
+                tDiv.innerHTML = `
+                    <div class="review-badge">${diff}日前</div>
+                    <div class="task-title">${task.chapter} - ${task.title}</div>
+                `;
+                container.appendChild(tDiv);
+            });
+        }
+
+        // Settings actions
+        function saveSettings() {
+            const dateVal = document.getElementById('input-exam-date').value;
+            if (dateVal) {
+                // Store date as midnight
+                appData.examDate = new Date(dateVal + "T23:59:59").toISOString();
+            }
+            saveData();
+            alert('設定を保存しました');
+            updateEngine();
+        }
+
+        function loadSampleData() {
+            if (!confirm('現在のタスクデータは上書きされます。よろしいですか？')) return;
+            
+            const dummyTasks = [];
+            let idCounter = 1;
+            for (let i = 1; i <= 10; i++) {
+                for (let j = 1; j <= 5; j++) {
+                    dummyTasks.push({
+                        id: idCounter++,
+                        chapter: `第${i}章`,
+                        title: `セクション ${i}.${j}`,
+                        completedAt: null
+                    });
+                }
+            }
+
+            appData.tasks = dummyTasks;
+            
+            // Set exam date to 30 days from now default
+            const d = new Date();
+            appData.startDate = d.toISOString();
+            d.setDate(d.getDate() + 30);
+            appData.examDate = d.toISOString();
+            document.getElementById('input-exam-date').value = appData.examDate.split('T')[0];
+            
+            saveData();
+            alert('サンプルデータ（全50タスク / 試験日30日後）をロードしました');
+            renderTasks();
+            updateEngine();
+        }
+
+        function clearData() {
+            if (confirm('すべてのデータを消去しますか？復元できません。')) {
+                localStorage.removeItem('antigravity_data');
+                appData = { examDate: null, startDate: null, tasks: [] };
+                document.getElementById('input-exam-date').value = '';
+                saveData();
+                renderTasks();
+                renderReviews();
+                updateEngine();
+            }
+        }
+
+        // Boot
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

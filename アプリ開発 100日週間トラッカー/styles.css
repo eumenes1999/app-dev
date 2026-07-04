@@ -1,0 +1,306 @@
+:root {
+    --bg-color: #F4F1ED; /* Light beige/off-white */
+    --card-bg: #FFFFFF;
+    --text-primary: #111111; /* Near Black */
+    --text-secondary: #666666;
+    --accent-color: #E52E2D; /* Striking Red from images */
+    --border-color: #111111; /* Black borders */
+    --border-radius: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+    transition: background-image 0.5s ease;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 600px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* ヘッダー全体 */
+header {
+    background: var(--card-bg);
+    border: 3px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2rem 1.5rem;
+    position: relative;
+    box-shadow: 6px 6px 0px var(--border-color);
+}
+
+h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+}
+
+.bg-control {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+}
+
+.bg-upload-label {
+    background: #fff;
+    border: 2px solid var(--border-color);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.bg-upload-label:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px var(--border-color);
+}
+
+.reset-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.reset-btn:hover {
+    color: var(--accent-color);
+}
+
+/* 目標追加フォーム */
+.add-goal-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+
+.add-goal-container input {
+    flex: 1;
+    background: #ffffff;
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.add-goal-container input:focus {
+    box-shadow: 4px 4px 0px var(--accent-color);
+}
+
+.add-goal-container button {
+    background: var(--text-primary);
+    color: #fff;
+    border: 2px solid var(--border-color);
+    padding: 0 1.5rem;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 4px 4px 0px var(--border-color);
+}
+
+.add-goal-container button:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+.add-goal-container button:disabled {
+    background: #ccc;
+    box-shadow: none;
+    transform: none;
+    cursor: not-allowed;
+}
+
+.goal-limit-text {
+    text-align: right;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+/* 目標カード群 */
+.goals-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* 個別カード */
+.goal-card {
+    background: var(--card-bg);
+    border: 3px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: 6px 6px 0px var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.goal-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.goal-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.delete-goal-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.delete-goal-btn:hover {
+    color: var(--accent-color);
+}
+
+/* 日数表示セクション */
+.day-display {
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.day-number-text {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+
+.day-number-large {
+    font-size: 4.5rem;
+    font-weight: 900;
+    color: var(--accent-color);
+    line-height: 1;
+    margin: 0.2rem 0;
+    letter-spacing: -0.05em;
+}
+
+/* 進捗バー */
+.progress-wrapper {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 14px;
+    background: #fff;
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-color);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 横に黒いドットなどの装飾をつけることも可能ですが、シンプルさ優先で */
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-right: 2px solid var(--border-color);
+}
+
+/* アクションボタン */
+.check-today-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 4px 4px 0px var(--border-color);
+}
+
+.check-today-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.check-today-btn.completed {
+    background: var(--accent-color);
+    color: #fff;
+    box-shadow: 0px 0px 0px var(--border-color);
+    transform: translate(4px, 4px);
+    pointer-events: none;
+}
+
+@media (max-width: 480px) {
+    .bg-control, .reset-btn {
+        position: static;
+        display: block;
+        text-align: center;
+        margin: 10px auto;
+        box-shadow: none;
+    }
+    .day-number-large {
+        font-size: 3.5rem;
+    }
+    .app-container {
+        padding: 1rem;
+    }
+}
