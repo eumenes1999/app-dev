@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAULT-TEC TERMLINK // PORTFOLIO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ==================== BOOT SCREEN ==================== -->
+<div id="boot-screen">
+  <pre id="boot-text"></pre>
+</div>
+
+<!-- ==================== PIP-BOY FRAME ==================== -->
+<div id="app" class="hidden">
+  <div class="crt-vignette"></div>
+  <div class="scanlines"></div>
+  <div class="flicker"></div>
+
+  <header class="pb-header">
+    <div class="pb-header-left">
+      <span class="pb-logo">ROBCO<span class="tm">TM</span> TERMLINK</span>
+      <span class="pb-sub">VAULT DWELLER FILE // NO. 000-000</span>
+    </div>
+    <button id="hue-toggle" class="pb-hue-btn" title="表示色を切り替える">COLOR</button>
+  </header>
+
+  <nav class="pb-tabs">
+    <button class="pb-tab active" data-tab="stat">STAT</button>
+    <button class="pb-tab" data-tab="inv">INV</button>
+    <button class="pb-tab" data-tab="data">DATA</button>
+    <button class="pb-tab" data-tab="radio">RADIO</button>
+  </nav>
+
+  <main class="pb-screen">
+
+    <!-- ---------- STAT (プロフィール / S.P.E.C.I.A.L.) ---------- -->
+    <section id="tab-stat" class="pb-panel active">
+      <div class="panel-title">// STATUS ────────────────────</div>
+
+      <div class="stat-name-block">
+        <h1 class="dweller-name">NAME HERE</h1>
+        <p class="dweller-role">ROLE / TITLE HERE — 一言キャッチコピーをここに</p>
+      </div>
+
+      <div class="special-grid">
+        <!-- S.P.E.C.I.A.L. 風ステータス。項目名・値・説明は自由に書き換え -->
+        <div class="special-item">
+          <span class="special-key">S</span>
+          <div class="special-bar"><div class="special-fill" style="--val:70%"></div></div>
+          <span class="special-label">STRENGTH（実行力）</span>
+        </div>
+        <div class="special-item">
+          <span class="special-key">P</span>
+          <div class="special-bar"><div class="special-fill" style="--val:85%"></div></div>
+          <span class="special-label">PERCEPTION（洞察力）</span>
+        </div>
+        <div class="special-item">
+          <span class="special-key">E</span>
+          <div class="special-bar"><div class="special-fill" style="--val:60%"></div></div>
+          <span class="special-label">ENDURANCE（継続力）</span>
+        </div>
+        <div class="special-item">
+          <span class="special-key">C</span>
+          <div class="special-bar"><div class="special-fill" style="--val:65%"></div></div>
+          <span class="special-label">CHARISMA（対人力）</span>
+        </div>
+        <div class="special-item">
+          <span class="special-key">I</span>
+          <div class="special-bar"><div class="special-fill" style="--val:90%"></div></div>
+          <span class="special-label">INTELLIGENCE（分析力）</span>
+        </div>
+        <div class="special-item">
+          <span class="special-key">A</span>
+          <div class="special-bar"><div class="special-fill" style="--val:75%"></div></div>
+          <span class="special-label">AGILITY（対応力）</span>
+        </div>
+        <div class="special-item">
+          <span class="special-key">L</span>
+          <div class="special-bar"><div class="special-fill" style="--val:55%"></div></div>
+          <span class="special-label">LUCK（運）</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- INV (経歴 / スキル) ---------- -->
+    <section id="tab-inv" class="pb-panel">
+      <div class="panel-title">// INVENTORY ──────────────────</div>
+
+      <div class="inv-list">
+        <div class="inv-row inv-header">
+          <span>ITEM</span><span>WEIGHT</span><span>VALUE</span>
+        </div>
+        <div class="inv-row">
+          <span>経歴・実績１（例：広告代理店 / 160社担当）</span><span>—</span><span>★★★★☆</span>
+        </div>
+        <div class="inv-row">
+          <span>経歴・実績２</span><span>—</span><span>★★★☆☆</span>
+        </div>
+        <div class="inv-row">
+          <span>使用ツール・スキル１</span><span>—</span><span>★★★★★</span>
+        </div>
+        <div class="inv-row">
+          <span>使用ツール・スキル２</span><span>—</span><span>★★★☆☆</span>
+        </div>
+      </div>
+
+      <div class="bio-box">
+        <p class="bio-text">
+          ここに自己紹介文を入れる。ROBCO端末のログのように、簡潔な短文を積み重ねると雰囲気が出る。
+        </p>
+      </div>
+    </section>
+
+    <!-- ---------- DATA (作品 / 実績) ---------- -->
+    <section id="tab-data" class="pb-panel">
+      <div class="panel-title">// HOLOTAPE ARCHIVE ───────────</div>
+
+      <div class="holotape-grid">
+        <a class="holotape" href="#" target="_blank" rel="noopener">
+          <div class="holotape-icon">▣</div>
+          <div class="holotape-body">
+            <span class="holotape-title">プロジェクト名 01</span>
+            <span class="holotape-desc">一行概要をここに。制作年、使用技術など。</span>
+          </div>
+        </a>
+        <a class="holotape" href="#" target="_blank" rel="noopener">
+          <div class="holotape-icon">▣</div>
+          <div class="holotape-body">
+            <span class="holotape-title">プロジェクト名 02</span>
+            <span class="holotape-desc">一行概要をここに。</span>
+          </div>
+        </a>
+        <a class="holotape" href="#" target="_blank" rel="noopener">
+          <div class="holotape-icon">▣</div>
+          <div class="holotape-body">
+            <span class="holotape-title">プロジェクト名 03</span>
+            <span class="holotape-desc">一行概要をここに。</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ---------- RADIO (連絡先) ---------- -->
+    <section id="tab-radio" class="pb-panel">
+      <div class="panel-title">// RADIO FREQUENCIES ─────────</div>
+
+      <div class="radio-list">
+        <a class="radio-freq" href="mailto:example@example.com">
+          <span class="freq-num">98.0</span><span class="freq-label">MAIL — example@example.com</span>
+        </a>
+        <a class="radio-freq" href="#" target="_blank" rel="noopener">
+          <span class="freq-num">101.5</span><span class="freq-label">X (Twitter) — @handle</span>
+        </a>
+        <a class="radio-freq" href="#" target="_blank" rel="noopener">
+          <span class="freq-num">106.9</span><span class="freq-label">GitHub — username</span>
+        </a>
+      </div>
+
+      <div class="vault-tec-seal">
+        <p>VAULT-TEC — 「安心をあなたに」</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pb-footer">
+    <span class="blink-cursor">_</span> AWAITING INPUT
+  </footer>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

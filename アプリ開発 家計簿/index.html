@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家計簿</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2a78d6">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>家計簿</h1>
+            <div class="month-nav">
+                <button id="prev-month-btn" class="nav-btn" aria-label="前の月">◀</button>
+                <span id="month-label" class="month-label">2026年07月</span>
+                <button id="next-month-btn" class="nav-btn" aria-label="次の月">▶</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- 収支サマリー -->
+            <section class="stats-row" aria-label="今月のサマリー">
+                <div class="stat-tile">
+                    <div class="stat-label">収入</div>
+                    <div class="stat-value" id="stat-income">¥0</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">支出</div>
+                    <div class="stat-value" id="stat-expense">¥0</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">収支</div>
+                    <div class="stat-value" id="stat-balance">¥0</div>
+                </div>
+            </section>
+
+            <!-- 入力フォーム -->
+            <section class="add-form-section">
+                <h2>記録を追加</h2>
+                <form id="entry-form" class="entry-form">
+                    <div class="form-row">
+                        <label for="entry-date">日付</label>
+                        <input type="date" id="entry-date" required>
+                    </div>
+                    <div class="form-row">
+                        <label>種別</label>
+                        <div class="type-toggle" role="radiogroup" aria-label="種別">
+                            <button type="button" class="type-btn active" data-type="expense">支出</button>
+                            <button type="button" class="type-btn" data-type="income">収入</button>
+                        </div>
+                    </div>
+                    <div class="form-row" id="category-row">
+                        <label for="entry-category">カテゴリ</label>
+                        <select id="entry-category"></select>
+                    </div>
+                    <div class="form-row">
+                        <label for="entry-amount">金額</label>
+                        <input type="number" id="entry-amount" min="1" step="1" placeholder="0" required>
+                    </div>
+                    <div class="form-row">
+                        <label for="entry-memo">メモ</label>
+                        <input type="text" id="entry-memo" maxlength="40" placeholder="任意">
+                    </div>
+                    <button type="submit" class="submit-btn">追加</button>
+                </form>
+            </section>
+
+            <!-- カテゴリ別支出グラフ -->
+            <section class="chart-section">
+                <h2>カテゴリ別支出</h2>
+                <div class="chart-wrap">
+                    <svg id="category-chart" class="viz-root" aria-label="カテゴリ別支出グラフ"></svg>
+                    <div id="chart-tooltip" class="chart-tooltip" role="tooltip" hidden></div>
+                </div>
+                <div id="chart-legend" class="chart-legend"></div>
+                <p id="chart-empty" class="empty-note" hidden>この月の支出データはまだありません。</p>
+            </section>
+
+            <!-- 明細一覧 -->
+            <section class="list-section">
+                <div class="list-header">
+                    <h2>明細</h2>
+                    <button id="reset-all-btn" class="reset-btn">全データリセット</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="entries-table">
+                        <thead>
+                            <tr>
+                                <th>日付</th>
+                                <th>種別</th>
+                                <th>カテゴリ</th>
+                                <th class="col-amount">金額</th>
+                                <th>メモ</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="entries-tbody"></tbody>
+                    </table>
+                </div>
+                <p id="list-empty" class="empty-note" hidden>この月の記録はまだありません。</p>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
