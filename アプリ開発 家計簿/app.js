@@ -1,7 +1,11 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 (() => {
     'use strict';
 
-    const STORAGE_KEY = 'kakeibo_entries_v1';
+    const SUPABASE_URL = 'https://wgfchfcfgznfhdyefnpg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_F-fw5O5XBoxsm9dHciOijg_U3ta5mmM';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // 順序はパレットのカテゴリカル配色スロット(1〜8)と対応させる
     const CATEGORIES = [
@@ -20,6 +24,16 @@
     const $ = (id) => document.getElementById(id);
 
     const el = {
+        authScreen: $('auth-screen'),
+        authForm: $('auth-form'),
+        authEmail: $('auth-email'),
+        authPassword: $('auth-password'),
+        authError: $('auth-error'),
+        authNotice: $('auth-notice'),
+        authSignupBtn: $('auth-signup-btn'),
+        appContainer: $('app-container'),
+        userEmail: $('user-email'),
+        logoutBtn: $('logout-btn'),
         monthLabel: $('month-label'),
         prevMonthBtn: $('prev-month-btn'),
         nextMonthBtn: $('next-month-btn'),
@@ -42,23 +56,23 @@
         resetAllBtn: $('reset-all-btn'),
     };
 
-    let entries = loadEntries();
+    let entries = [];
     let currentType = 'expense';
     const today = new Date();
     let viewYear = today.getFullYear();
     let viewMonth = today.getMonth() + 1; // 1-12
 
-    function loadEntries() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : [];
-        } catch (e) {
-            return [];
+    async function loadEntries() {
+        const { data, error } = await supabase
+            .from('entries')
+            .select('*')
+            .order('date', { ascending: false });
+        if (error) {
+            console.error(error);
+            entries = [];
+            return;
         }
-    }
-
-    function saveEntries() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        entries = data.map(e => ({ ...e, amount: Number(e.amount) }));
     }
 
     function pad2(n) { return String(n).padStart(2, '0'); }
@@ -112,7 +126,7 @@
 
     function renderList(monthEntries) {
         el.tbody.textContent = '';
-        const sorted = [...monthEntries].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+        const sorted = [...monthEntries].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
 
         el.listEmpty.hidden = sorted.length > 0;
 
@@ -332,28 +346,42 @@
         renderList(monthEntries);
     }
 
-    function deleteEntry(id) {
+    async function deleteEntry(id) {
+        const prev = entries;
         entries = entries.filter(e => e.id !== id);
-        saveEntries();
         render();
+        const { error } = await supabase.from('entries').delete().eq('id', id);
+        if (error) {
+            console.error(error);
+            entries = prev;
+            render();
+        }
     }
 
-    function handleSubmit(evt) {
+    async function handleSubmit(evt) {
         evt.preventDefault();
         const date = el.dateInput.value;
         const amount = Number(el.amountInput.value);
         if (!date || !amount || amount <= 0) return;
 
-        const entry = {
-            id: Date.now() + Math.random(),
-            date,
-            type: currentType,
-            category: currentType === 'expense' ? el.categorySelect.value : null,
-            amount,
-            memo: el.memoInput.value.trim(),
-        };
-        entries.push(entry);
-        saveEntries();
+        const { data, error } = await supabase
+            .from('entries')
+            .insert({
+                date,
+                type: currentType,
+                category: currentType === 'expense' ? el.categorySelect.value : null,
+                amount,
+                memo: el.memoInput.value.trim(),
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        entries.push({ ...data, amount: Number(data.amount) });
 
         const [y, m] = date.split('-').map(Number);
         viewYear = y;
@@ -371,7 +399,7 @@
         render();
     }
 
-    function init() {
+    function initApp() {
         initCategorySelect();
         setType('expense');
         el.dateInput.value = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
@@ -384,16 +412,85 @@
         el.prevMonthBtn.addEventListener('click', () => shiftMonth(-1));
         el.nextMonthBtn.addEventListener('click', () => shiftMonth(1));
 
-        el.resetAllBtn.addEventListener('click', () => {
-            if (confirm('すべてのデータを削除します。よろしいですか？')) {
-                entries = [];
-                saveEntries();
+        el.resetAllBtn.addEventListener('click', async () => {
+            if (!confirm('すべてのデータを削除します。よろしいですか？')) return;
+            const prev = entries;
+            entries = [];
+            render();
+            const { error } = await supabase.from('entries').delete().not('id', 'is', null);
+            if (error) {
+                console.error(error);
+                entries = prev;
                 render();
             }
         });
+    }
 
+    function showAuthError(message) {
+        el.authError.textContent = message;
+        el.authError.hidden = !message;
+    }
+
+    function showAuthNotice(message) {
+        el.authNotice.textContent = message;
+        el.authNotice.hidden = !message;
+    }
+
+    async function showApp(session) {
+        el.authScreen.hidden = true;
+        el.appContainer.hidden = false;
+        el.userEmail.textContent = session.user.email ?? '';
+        await loadEntries();
         render();
     }
 
-    init();
+    function showAuthScreen() {
+        el.appContainer.hidden = true;
+        el.authScreen.hidden = false;
+        entries = [];
+    }
+
+    function initAuth() {
+        el.authForm.addEventListener('submit', async (evt) => {
+            evt.preventDefault();
+            showAuthError('');
+            showAuthNotice('');
+            const email = el.authEmail.value.trim();
+            const password = el.authPassword.value;
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) showAuthError(error.message);
+        });
+
+        el.authSignupBtn.addEventListener('click', async () => {
+            showAuthError('');
+            showAuthNotice('');
+            const email = el.authEmail.value.trim();
+            const password = el.authPassword.value;
+            if (!email || !password) {
+                showAuthError('メールアドレスとパスワードを入力してください。');
+                return;
+            }
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) {
+                showAuthError(error.message);
+                return;
+            }
+            showAuthNotice('登録しました。確認メールが届いた場合はリンクを開いてからログインしてください。');
+        });
+
+        el.logoutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+        });
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+            if (session) {
+                showApp(session);
+            } else {
+                showAuthScreen();
+            }
+        });
+    }
+
+    initApp();
+    initAuth();
 })();
