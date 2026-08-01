@@ -290,7 +290,58 @@ h1 {
     color: #fff;
     box-shadow: 0px 0px 0px var(--border-color);
     transform: translate(4px, 4px);
-    pointer-events: none;
+}
+
+.check-today-btn.skipped {
+    background: #6f8fa8;
+    color: #fff;
+    box-shadow: 0px 0px 0px var(--border-color);
+    transform: translate(4px, 4px);
+}
+
+.check-today-btn:disabled {
+    cursor: default;
+}
+
+/* 今日のアクション（チェック/スキップ/取り消し）まとめ */
+.today-action {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.skip-today-btn {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 2px dashed #ccc4b5;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.skip-today-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+.undo-today-btn {
+    align-self: center;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.undo-today-btn:hover {
+    color: var(--accent-color);
 }
 
 @media (max-width: 480px) {
@@ -309,150 +360,17 @@ h1 {
     }
 }
 
-/* 認証画面 */
-.auth-screen {
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-}
-
-.auth-card {
-    width: 100%;
-    max-width: 380px;
-    background: var(--card-bg);
-    border: 3px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 2rem 1.5rem;
-    box-shadow: 6px 6px 0px var(--border-color);
-}
-
-.auth-card h1 {
-    font-size: 1.6rem;
-    margin-bottom: 0.3rem;
-}
-
-.auth-sub {
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.auth-form .form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.auth-form label {
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: var(--text-secondary);
-}
-
-.auth-form input {
-    background: #ffffff;
-    border: 2px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 0.7rem 0.9rem;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 700;
-    outline: none;
-}
-
-.auth-form input:focus {
-    box-shadow: 4px 4px 0px var(--accent-color);
-}
-
-.auth-error {
-    color: var(--accent-color);
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.auth-notice {
-    color: #0a7a2f;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.auth-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-}
-
-.auth-actions button {
-    padding: 0.8rem;
-    border-radius: 6px;
-    font-weight: 800;
-    font-size: 0.95rem;
-    cursor: pointer;
-    border: 2px solid var(--border-color);
-    transition: all 0.2s ease;
-}
-
-#auth-login-btn {
-    background: var(--text-primary);
-    color: #fff;
-    box-shadow: 4px 4px 0px var(--border-color);
-}
-#auth-login-btn:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px var(--border-color);
-}
-
-.auth-signup-btn {
-    background: #ffffff;
-    color: var(--text-primary);
-}
-.auth-signup-btn:hover {
-    background: #f0f0f0;
-}
-
-/* ユーザーバー */
-.user-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 1rem;
-    font-size: 0.75rem;
-}
-
-.user-email {
-    color: var(--text-secondary);
-    font-weight: 700;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.logout-btn {
-    border: 2px solid var(--border-color);
+/* 初期化エラー（匿名ログイン失敗時のみ表示） */
+.init-error {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1rem 1.5rem;
     background: #fff;
-    color: var(--text-primary);
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 4px 10px;
-    border-radius: 20px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.logout-btn:hover {
-    background: var(--accent-color);
-    color: #fff;
+    border: 3px solid var(--accent-color);
+    border-radius: var(--border-radius);
+    color: var(--accent-color);
+    font-weight: 700;
+    font-size: 0.9rem;
 }
 
 /* サブ統計（streak） */
@@ -504,6 +422,11 @@ h1 {
 .day-cell.missed {
     background: #e5e0d8;
     border-color: #ccc4b5;
+}
+
+.day-cell.skipped {
+    background: #a8c5d6;
+    border-color: #6f8fa8;
 }
 
 .day-cell.today {

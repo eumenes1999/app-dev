@@ -9,6 +9,9 @@ create table if not exists public.habits (
   created_at timestamptz not null default now()
 );
 
+-- スキップ機能（既存テーブルに対する追記マイグレーション。新規作成時も既存テーブルへの追加時もそのまま実行可）
+alter table public.habits add column if not exists skipped_dates date[] not null default '{}';
+
 alter table public.habits enable row level security;
 
 create policy "select own habits"

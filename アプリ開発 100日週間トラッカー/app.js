@@ -14,16 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetAllBtn = document.getElementById('reset-all-btn');
     const bgUpload = document.getElementById('bg-upload');
 
-    const authScreen = document.getElementById('auth-screen');
     const appContainer = document.getElementById('app-container');
-    const authForm = document.getElementById('auth-form');
-    const authEmail = document.getElementById('auth-email');
-    const authPassword = document.getElementById('auth-password');
-    const authError = document.getElementById('auth-error');
-    const authNotice = document.getElementById('auth-notice');
-    const authSignupBtn = document.getElementById('auth-signup-btn');
-    const userEmailEl = document.getElementById('user-email');
-    const logoutBtn = document.getElementById('logout-btn');
+    const initErrorEl = document.getElementById('init-error');
 
     const TOTAL_DAYS = 100;
     const MAX_GOALS = 10;
@@ -99,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: row.id,
             title: row.title,
             completedDates: row.completed_dates || [],
+            skippedDates: row.skipped_dates || [],
             createdAt: row.created_at.slice(0, 10),
         };
     }
@@ -165,9 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (habit.completedDates.includes(today)) return;
 
         const nextDates = [...habit.completedDates, today];
+        const nextSkipped = habit.skippedDates.filter(d => d !== today);
         const { data, error } = await supabase
             .from('habits')
-            .update({ completed_dates: nextDates })
+            .update({ completed_dates: nextDates, skipped_dates: nextSkipped })
             .eq('id', habitId)
             .select()
             .single();
@@ -178,7 +172,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         habit.completedDates = data.completed_dates || nextDates;
+        habit.skippedDates = data.skipped_dates || nextSkipped;
         triggerConfetti(btnElement);
+        renderGoals();
+    }
+
+    // 1日分をスキップ（連続日数は途切れさせないが、達成日数にも加算しない）
+    async function skipToday(habitId) {
+        const habit = habits.find(h => h.id === habitId);
+        if (!habit) return;
+        const today = todayIso();
+        if (habit.skippedDates.includes(today) || habit.completedDates.includes(today)) return;
+
+        const nextSkipped = [...habit.skippedDates, today];
+        const { data, error } = await supabase
+            .from('habits')
+            .update({ skipped_dates: nextSkipped })
+            .eq('id', habitId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        habit.skippedDates = data.skipped_dates || nextSkipped;
+        renderGoals();
+    }
+
+    // 今日の記録（達成/スキップ）を取り消して未定に戻す
+    async function undoToday(habitId) {
+        const habit = habits.find(h => h.id === habitId);
+        if (!habit) return;
+        const today = todayIso();
+        const nextDates = habit.completedDates.filter(d => d !== today);
+        const nextSkipped = habit.skippedDates.filter(d => d !== today);
+
+        const { data, error } = await supabase
+            .from('habits')
+            .update({ completed_dates: nextDates, skipped_dates: nextSkipped })
+            .eq('id', habitId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        habit.completedDates = data.completed_dates || nextDates;
+        habit.skippedDates = data.skipped_dates || nextSkipped;
         renderGoals();
     }
 
@@ -196,13 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 連続日数（今日 or 昨日を起点に遡ってカウント）
-    function calcStreak(completedDates, today) {
+    // 連続日数（今日 or 昨日を起点に遡ってカウント。スキップ日は途切れさせず、加算もしない）
+    function calcStreak(completedDates, skippedDates, today) {
         const doneSet = new Set(completedDates);
+        const skipSet = new Set(skippedDates);
         let cursor = doneSet.has(today) ? today : addDaysIso(today, -1);
         let streak = 0;
-        while (doneSet.has(cursor)) {
-            streak += 1;
+        while (doneSet.has(cursor) || skipSet.has(cursor)) {
+            if (doneSet.has(cursor)) streak += 1;
             cursor = addDaysIso(cursor, -1);
         }
         return streak;
@@ -211,11 +256,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 100日ぶんのマス目データを生成
     function buildDayCells(habit, today) {
         const doneSet = new Set(habit.completedDates);
+        const skipSet = new Set(habit.skippedDates);
         const cells = [];
         for (let i = 0; i < TOTAL_DAYS; i++) {
             const iso = addDaysIso(habit.createdAt, i);
             let state;
             if (doneSet.has(iso)) state = 'done';
+            else if (skipSet.has(iso)) state = 'skipped';
             else if (iso === today) state = 'today';
             else if (iso < today) state = 'missed';
             else state = 'future';
@@ -247,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             const count = habit.completedDates.length;
-            const streak = calcStreak(habit.completedDates, today);
+            const streak = calcStreak(habit.completedDates, habit.skippedDates, today);
             const percentage = Math.min((count / TOTAL_DAYS) * 100, 100);
 
             const dayDisplay = document.createElement('div');
@@ -288,17 +335,48 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const isCompletedToday = habit.completedDates.includes(today);
-            const checkBtn = document.createElement('button');
-            checkBtn.className = 'check-today-btn';
+            const isSkippedToday = habit.skippedDates.includes(today);
+
+            const actionArea = document.createElement('div');
+            actionArea.className = 'today-action';
 
             if (isCompletedToday) {
-                checkBtn.classList.add('completed');
-                checkBtn.innerHTML = '今日は達成済み！ ✓';
+                const doneBtn = document.createElement('button');
+                doneBtn.className = 'check-today-btn completed';
+                doneBtn.innerHTML = '今日は達成済み！ ✓';
+                doneBtn.disabled = true;
+                const undoBtn = document.createElement('button');
+                undoBtn.className = 'undo-today-btn';
+                undoBtn.textContent = '取り消す';
+                undoBtn.addEventListener('click', () => undoToday(habit.id));
+                actionArea.appendChild(doneBtn);
+                actionArea.appendChild(undoBtn);
+            } else if (isSkippedToday) {
+                const skippedBtn = document.createElement('button');
+                skippedBtn.className = 'check-today-btn skipped';
+                skippedBtn.innerHTML = '今日はお休み中 ⏭';
+                skippedBtn.disabled = true;
+                const undoBtn = document.createElement('button');
+                undoBtn.className = 'undo-today-btn';
+                undoBtn.textContent = '取り消す';
+                undoBtn.addEventListener('click', () => undoToday(habit.id));
+                actionArea.appendChild(skippedBtn);
+                actionArea.appendChild(undoBtn);
             } else {
+                const checkBtn = document.createElement('button');
+                checkBtn.className = 'check-today-btn';
                 checkBtn.innerHTML = '今日の分をチェック';
                 checkBtn.addEventListener('click', (e) => {
                     checkToday(habit.id, e.target);
                 });
+                const skipBtn = document.createElement('button');
+                skipBtn.className = 'skip-today-btn';
+                skipBtn.textContent = '今日はお休みにする';
+                skipBtn.addEventListener('click', () => {
+                    skipToday(habit.id);
+                });
+                actionArea.appendChild(checkBtn);
+                actionArea.appendChild(skipBtn);
             }
 
             card.appendChild(header);
@@ -306,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.appendChild(subStats);
             card.appendChild(progressWrapper);
             card.appendChild(dayGrid);
-            card.appendChild(checkBtn);
+            card.appendChild(actionArea);
 
             goalsContainer.appendChild(card);
         });
@@ -373,73 +451,31 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadHabits();
     }
 
-    // ---- 認証 ----
-    function showAuthError(message) {
-        authError.textContent = message;
-        authError.hidden = !message;
+    // ---- セッション（匿名ログイン。ログイン画面なし、この端末専用の識別子を自動発行） ----
+    function showInitError(message) {
+        initErrorEl.textContent = message;
+        initErrorEl.hidden = !message;
     }
 
-    function showAuthNotice(message) {
-        authNotice.textContent = message;
-        authNotice.hidden = !message;
-    }
+    async function initSession() {
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        let session = existing;
 
-    async function showApp(session) {
-        authScreen.hidden = true;
+        if (!session) {
+            const { data, error } = await supabase.auth.signInAnonymously();
+            if (error) {
+                showInitError(`データの初期化に失敗しました: ${error.message}`);
+                return;
+            }
+            session = data.session;
+        }
+
         appContainer.hidden = false;
-        userEmailEl.textContent = session.user.email ?? '';
         await loadHabits();
         await importLocalGoalsIfAny();
         renderGoals();
     }
 
-    function showAuthScreen() {
-        appContainer.hidden = true;
-        authScreen.hidden = false;
-        habits = [];
-    }
-
-    function initAuth() {
-        authForm.addEventListener('submit', async (evt) => {
-            evt.preventDefault();
-            showAuthError('');
-            showAuthNotice('');
-            const email = authEmail.value.trim();
-            const password = authPassword.value;
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) showAuthError(error.message);
-        });
-
-        authSignupBtn.addEventListener('click', async () => {
-            showAuthError('');
-            showAuthNotice('');
-            const email = authEmail.value.trim();
-            const password = authPassword.value;
-            if (!email || !password) {
-                showAuthError('メールアドレスとパスワードを入力してください。');
-                return;
-            }
-            const { error } = await supabase.auth.signUp({ email, password });
-            if (error) {
-                showAuthError(error.message);
-                return;
-            }
-            showAuthNotice('登録しました。確認メールが届いた場合はリンクを開いてからログインしてください。');
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-            await supabase.auth.signOut();
-        });
-
-        supabase.auth.onAuthStateChange((_event, session) => {
-            if (session) {
-                showApp(session);
-            } else {
-                showAuthScreen();
-            }
-        });
-    }
-
     loadBackground();
-    initAuth();
+    initSession();
 });
