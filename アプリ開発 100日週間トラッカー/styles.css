@@ -683,3 +683,50 @@ header h1 {
 .settings-section-danger .settings-btn-danger:hover {
     background: rgba(255, 45, 85, 0.22);
 }
+
+/* 習慣カード内の「今日のメモ」欄 */
+.inline-memo {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.inline-memo-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 0.5rem;
+}
+
+.inline-memo-label .memo-save-state {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.inline-memo-textarea {
+    width: 100%;
+    min-height: 2.8rem;
+    resize: vertical;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    padding: 0.7rem 0.9rem;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.inline-memo-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.inline-memo-textarea:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.7);
+}

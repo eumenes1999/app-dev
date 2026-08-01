@@ -353,6 +353,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return cells;
     }
 
+    // 習慣カード内に直接置く「今日のメモ」欄（メモタブと同じデータ・同じ保存処理を使い回す）
+    function buildInlineMemo(habit, today) {
+        const wrap = document.createElement('div');
+        wrap.className = 'inline-memo';
+
+        const label = document.createElement('div');
+        label.className = 'inline-memo-label';
+        label.textContent = '📝 今日のメモ';
+
+        const stateEl = document.createElement('span');
+        stateEl.className = 'memo-save-state';
+        label.appendChild(stateEl);
+
+        const existing = memos.find(m => m.habitId === habit.id && m.date === today);
+        const textarea = document.createElement('textarea');
+        textarea.className = 'inline-memo-textarea';
+        textarea.placeholder = '今日感じたこと・気づきをひとこと';
+        textarea.value = existing ? existing.content : '';
+        textarea.addEventListener('blur', () => {
+            const latest = memos.find(m => m.habitId === habit.id && m.date === today);
+            if (textarea.value === (latest ? latest.content : '')) return;
+            saveMemo(habit, today, textarea.value, stateEl);
+        });
+
+        wrap.appendChild(label);
+        wrap.appendChild(textarea);
+        return wrap;
+    }
+
     // 画面の描画（カード生成）
     function renderGoals() {
         goalsContainer.innerHTML = '';
@@ -470,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.appendChild(progressWrapper);
             card.appendChild(dayGrid);
             card.appendChild(actionArea);
+            card.appendChild(buildInlineMemo(habit, today));
 
             goalsContainer.appendChild(card);
         });
