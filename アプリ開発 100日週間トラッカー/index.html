@@ -49,10 +49,35 @@
             <div class="goal-limit-text">※ 目標は最大10個まで登録できます (<span id="goal-count-display">0</span>/10)</div>
         </header>
 
-        <main>
+        <div class="view-tabs">
+            <button id="tab-habits-btn" class="view-tab active" type="button">習慣</button>
+            <button id="tab-memos-btn" class="view-tab" type="button">メモ</button>
+        </div>
+
+        <main id="habits-view">
             <div id="goals-container" class="goals-container">
                 <!-- JavaScriptで目標カードが生成されます -->
             </div>
+        </main>
+
+        <main id="memos-view" hidden>
+            <div class="memo-habit-select">
+                <label for="memo-habit-select">習慣を選択</label>
+                <select id="memo-habit-select">
+                    <option value="__all__">すべて（閲覧のみ）</option>
+                </select>
+            </div>
+
+            <section id="memo-week-section" class="memo-week">
+                <h2>今週のメモ（直近7日・編集できます）</h2>
+                <div id="memo-week-list" class="memo-week-list"></div>
+            </section>
+
+            <section class="memo-archive">
+                <h2 id="memo-archive-title">過去のメモ</h2>
+                <div id="memo-archive-list" class="memo-archive-list"></div>
+                <p id="memo-empty" class="empty-note" hidden>まだメモがありません。</p>
+            </section>
         </main>
     </div>
 

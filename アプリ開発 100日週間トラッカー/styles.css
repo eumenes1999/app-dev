@@ -528,3 +528,161 @@ header h1 {
 .day-cell.future {
     background: rgba(255, 255, 255, 0.08);
 }
+
+/* 画面切り替えタブ（習慣 / メモ） */
+.view-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 6px;
+    background: var(--surface-color);
+    border-radius: 999px;
+    box-shadow: var(--shadow-soft);
+}
+
+.view-tab {
+    flex: 1;
+    padding: 0.7rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-tab.active {
+    background: linear-gradient(160deg, #ff5c7c 0%, #b3123f 100%);
+    color: #fff;
+}
+
+/* メモ画面 */
+.memo-habit-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.memo-habit-select label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.memo-habit-select select {
+    border: 1.5px solid rgba(127, 127, 127, 0.25);
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.memo-week,
+.memo-archive {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem 1.5rem 1.75rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.memo-week h2,
+.memo-archive h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.memo-week-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.memo-week-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.memo-week-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.memo-week-date {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.memo-week-date.is-today {
+    color: var(--accent-color);
+}
+
+.memo-save-state {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.memo-week-row textarea {
+    width: 100%;
+    min-height: 3.2rem;
+    resize: vertical;
+    border: 1.5px solid rgba(127, 127, 127, 0.25);
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0.7rem 0.9rem;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.memo-week-row textarea:focus {
+    border-color: var(--accent-color);
+}
+
+.memo-archive-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.memo-archive-item {
+    padding: 0.9rem 1rem;
+    border-radius: 16px;
+    background: rgba(127, 127, 127, 0.08);
+}
+
+.memo-archive-item-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.memo-archive-item-body {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.empty-note {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 1rem 0;
+}

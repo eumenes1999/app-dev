@@ -19,6 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastEl = document.getElementById('toast');
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
 
+    const tabHabitsBtn = document.getElementById('tab-habits-btn');
+    const tabMemosBtn = document.getElementById('tab-memos-btn');
+    const habitsView = document.getElementById('habits-view');
+    const memosView = document.getElementById('memos-view');
+    const memoHabitSelect = document.getElementById('memo-habit-select');
+    const memoWeekSection = document.getElementById('memo-week-section');
+    const memoWeekList = document.getElementById('memo-week-list');
+    const memoArchiveTitle = document.getElementById('memo-archive-title');
+    const memoArchiveList = document.getElementById('memo-archive-list');
+    const memoEmptyEl = document.getElementById('memo-empty');
+
     // ---- テーマ切り替え（ダーク/ライト。未選択時はOS設定に追従） ----
     const THEME_KEY = '100days_theme';
 
@@ -516,6 +527,186 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadHabits();
     }
 
+    // ---- メモ機能（習慣ごとに1日1件。直近7日だけ編集可、それ以前は閲覧専用アーカイブ。習慣を削除しても消えない） ----
+    let memos = [];
+
+    function rowToMemo(row) {
+        return {
+            id: row.id,
+            habitId: row.habit_id,
+            habitTitle: row.habit_title,
+            date: row.date,
+            content: row.content,
+        };
+    }
+
+    async function loadMemos() {
+        const { data, error } = await supabase
+            .from('habit_memos')
+            .select('*')
+            .order('date', { ascending: false });
+        if (error) {
+            console.error(error);
+            showToast('メモの読み込みに失敗しました');
+            memos = [];
+            return;
+        }
+        memos = data.map(rowToMemo);
+    }
+
+    function populateMemoHabitSelect() {
+        const current = memoHabitSelect.value || '__all__';
+        memoHabitSelect.innerHTML = '<option value="__all__">すべて（閲覧のみ）</option>';
+        habits.forEach(habit => {
+            const opt = document.createElement('option');
+            opt.value = habit.id;
+            opt.textContent = habit.title;
+            memoHabitSelect.appendChild(opt);
+        });
+        const stillExists = current === '__all__' || habits.some(h => h.id === current);
+        memoHabitSelect.value = stillExists ? current : '__all__';
+    }
+
+    async function saveMemo(habit, date, content, stateEl) {
+        const existing = memos.find(m => m.habitId === habit.id && m.date === date);
+        if (!existing && content.trim() === '') return;
+
+        if (stateEl) stateEl.textContent = '保存中…';
+
+        const { data, error } = await supabase
+            .from('habit_memos')
+            .upsert(
+                { habit_id: habit.id, habit_title: habit.title, date, content, updated_at: new Date().toISOString() },
+                { onConflict: 'habit_id,date' }
+            )
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            showToast('メモの保存に失敗しました');
+            if (stateEl) stateEl.textContent = '';
+            return;
+        }
+
+        if (existing) {
+            existing.content = data.content;
+        } else {
+            memos.unshift(rowToMemo(data));
+        }
+        if (stateEl) {
+            stateEl.textContent = '保存済み';
+            setTimeout(() => { stateEl.textContent = ''; }, 1500);
+        }
+    }
+
+    function renderMemoWeek(habit) {
+        memoWeekList.innerHTML = '';
+        const today = todayIso();
+        for (let i = 0; i < 7; i++) {
+            const date = addDaysIso(today, -i);
+            const existing = memos.find(m => m.habitId === habit.id && m.date === date);
+
+            const row = document.createElement('div');
+            row.className = 'memo-week-row';
+
+            const rowHeader = document.createElement('div');
+            rowHeader.className = 'memo-week-row-header';
+            const dateLabel = document.createElement('span');
+            dateLabel.className = `memo-week-date${date === today ? ' is-today' : ''}`;
+            dateLabel.textContent = date === today ? `${date}（今日）` : date;
+            const stateEl = document.createElement('span');
+            stateEl.className = 'memo-save-state';
+            rowHeader.appendChild(dateLabel);
+            rowHeader.appendChild(stateEl);
+
+            const textarea = document.createElement('textarea');
+            textarea.placeholder = 'この日のメモを書く';
+            textarea.value = existing ? existing.content : '';
+            textarea.addEventListener('blur', () => {
+                if (textarea.value === (existing ? existing.content : '')) return;
+                saveMemo(habit, date, textarea.value, stateEl);
+            });
+
+            row.appendChild(rowHeader);
+            row.appendChild(textarea);
+            memoWeekList.appendChild(row);
+        }
+    }
+
+    function renderMemoArchive(selectedValue) {
+        memoArchiveList.innerHTML = '';
+        const today = todayIso();
+        const weekStart = addDaysIso(today, -6);
+
+        let list;
+        if (selectedValue === '__all__') {
+            memoArchiveTitle.textContent = 'すべてのメモ';
+            list = memos;
+        } else {
+            const habit = habits.find(h => h.id === selectedValue);
+            memoArchiveTitle.textContent = '過去のメモ（直近7日より前）';
+            list = memos.filter(m => m.habitId === selectedValue && m.date < weekStart);
+            void habit;
+        }
+
+        memoEmptyEl.hidden = list.length > 0;
+
+        list.forEach(memo => {
+            const item = document.createElement('div');
+            item.className = 'memo-archive-item';
+            const header = document.createElement('div');
+            header.className = 'memo-archive-item-header';
+            const dateSpan = document.createElement('span');
+            dateSpan.textContent = memo.date;
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = memo.habitTitle;
+            header.appendChild(dateSpan);
+            header.appendChild(titleSpan);
+            const body = document.createElement('div');
+            body.className = 'memo-archive-item-body';
+            body.textContent = memo.content || '（本文なし）';
+            item.appendChild(header);
+            item.appendChild(body);
+            memoArchiveList.appendChild(item);
+        });
+    }
+
+    function renderMemoView() {
+        populateMemoHabitSelect();
+        const selected = memoHabitSelect.value;
+
+        if (selected === '__all__') {
+            memoWeekSection.hidden = true;
+        } else {
+            const habit = habits.find(h => h.id === selected);
+            if (habit) {
+                memoWeekSection.hidden = false;
+                renderMemoWeek(habit);
+            } else {
+                memoWeekSection.hidden = true;
+            }
+        }
+
+        renderMemoArchive(selected);
+    }
+
+    memoHabitSelect.addEventListener('change', renderMemoView);
+
+    function switchView(view) {
+        const showHabits = view === 'habits';
+        habitsView.hidden = !showHabits;
+        memosView.hidden = showHabits;
+        tabHabitsBtn.classList.toggle('active', showHabits);
+        tabMemosBtn.classList.toggle('active', !showHabits);
+        if (!showHabits) {
+            renderMemoView();
+        }
+    }
+
+    tabHabitsBtn.addEventListener('click', () => switchView('habits'));
+    tabMemosBtn.addEventListener('click', () => switchView('memos'));
+
     // ---- セッション（匿名ログイン。ログイン画面なし、この端末専用の識別子を自動発行） ----
     function showInitError(message) {
         initErrorEl.textContent = message;
@@ -539,6 +730,8 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadHabits();
         await importLocalGoalsIfAny();
         renderGoals();
+        await loadMemos();
+        populateMemoHabitSelect();
     }
 
     initTheme();
