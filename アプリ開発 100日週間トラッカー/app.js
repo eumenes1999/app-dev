@@ -16,6 +16,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const appContainer = document.getElementById('app-container');
     const initErrorEl = document.getElementById('init-error');
+    const toastEl = document.getElementById('toast');
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+
+    // ---- テーマ切り替え（ダーク/ライト。未選択時はOS設定に追従） ----
+    const THEME_KEY = '100days_theme';
+
+    function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        if (themeToggleBtn) {
+            themeToggleBtn.textContent = theme === 'dark' ? '☀️ ライト' : '🌙 ダーク';
+        }
+    }
+
+    function initTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(theme);
+    }
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.dataset.theme === 'dark';
+            const next = isDark ? 'light' : 'dark';
+            localStorage.setItem(THEME_KEY, next);
+            applyTheme(next);
+        });
+    }
+
+    let toastTimer = null;
+    function showToast(message) {
+        toastEl.textContent = message;
+        toastEl.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3000);
+    }
 
     const TOTAL_DAYS = 100;
     const MAX_GOALS = 10;
@@ -80,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .order('created_at', { ascending: true });
         if (error) {
             console.error(error);
+            showToast('データの読み込みに失敗しました');
             habits = [];
             return;
         }
@@ -122,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (error) {
             console.error(error);
+            showToast('目標の追加に失敗しました');
             return;
         }
 
@@ -145,36 +182,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const { error } = await supabase.from('habits').delete().not('id', 'is', null);
         if (error) {
             console.error(error);
+            showToast('リセットに失敗しました');
             habits = prev;
             renderGoals();
         }
     });
 
-    // 1日分のチェック
+    // 直前に操作したカードのid。renderGoals()側でポップアニメーションを付けるのに使う
+    let lastToggledHabitId = null;
+
+    // 1日分のチェック（即座に画面へ反映し、裏でSupabaseへ保存。失敗時のみ元に戻す）
     async function checkToday(habitId, btnElement) {
         const habit = habits.find(h => h.id === habitId);
         if (!habit) return;
         const today = todayIso();
         if (habit.completedDates.includes(today)) return;
 
-        const nextDates = [...habit.completedDates, today];
-        const nextSkipped = habit.skippedDates.filter(d => d !== today);
+        const prevCompleted = habit.completedDates;
+        const prevSkipped = habit.skippedDates;
+        habit.completedDates = [...habit.completedDates, today];
+        habit.skippedDates = habit.skippedDates.filter(d => d !== today);
+        lastToggledHabitId = habitId;
+        triggerConfetti(btnElement);
+        renderGoals();
+
         const { data, error } = await supabase
             .from('habits')
-            .update({ completed_dates: nextDates, skipped_dates: nextSkipped })
+            .update({ completed_dates: habit.completedDates, skipped_dates: habit.skippedDates })
             .eq('id', habitId)
             .select()
             .single();
 
         if (error) {
             console.error(error);
+            showToast('保存に失敗しました。もう一度お試しください');
+            habit.completedDates = prevCompleted;
+            habit.skippedDates = prevSkipped;
+            renderGoals();
             return;
         }
-
-        habit.completedDates = data.completed_dates || nextDates;
-        habit.skippedDates = data.skipped_dates || nextSkipped;
-        triggerConfetti(btnElement);
-        renderGoals();
+        habit.completedDates = data.completed_dates || habit.completedDates;
+        habit.skippedDates = data.skipped_dates || habit.skippedDates;
     }
 
     // 1日分をスキップ（連続日数は途切れさせないが、達成日数にも加算しない）
@@ -184,21 +232,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = todayIso();
         if (habit.skippedDates.includes(today) || habit.completedDates.includes(today)) return;
 
-        const nextSkipped = [...habit.skippedDates, today];
+        const prevSkipped = habit.skippedDates;
+        habit.skippedDates = [...habit.skippedDates, today];
+        lastToggledHabitId = habitId;
+        renderGoals();
+
         const { data, error } = await supabase
             .from('habits')
-            .update({ skipped_dates: nextSkipped })
+            .update({ skipped_dates: habit.skippedDates })
             .eq('id', habitId)
             .select()
             .single();
 
         if (error) {
             console.error(error);
+            showToast('保存に失敗しました。もう一度お試しください');
+            habit.skippedDates = prevSkipped;
+            renderGoals();
             return;
         }
-
-        habit.skippedDates = data.skipped_dates || nextSkipped;
-        renderGoals();
+        habit.skippedDates = data.skipped_dates || habit.skippedDates;
     }
 
     // 今日の記録（達成/スキップ）を取り消して未定に戻す
@@ -206,24 +259,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const habit = habits.find(h => h.id === habitId);
         if (!habit) return;
         const today = todayIso();
-        const nextDates = habit.completedDates.filter(d => d !== today);
-        const nextSkipped = habit.skippedDates.filter(d => d !== today);
+        const prevCompleted = habit.completedDates;
+        const prevSkipped = habit.skippedDates;
+        habit.completedDates = habit.completedDates.filter(d => d !== today);
+        habit.skippedDates = habit.skippedDates.filter(d => d !== today);
+        lastToggledHabitId = habitId;
+        renderGoals();
 
         const { data, error } = await supabase
             .from('habits')
-            .update({ completed_dates: nextDates, skipped_dates: nextSkipped })
+            .update({ completed_dates: habit.completedDates, skipped_dates: habit.skippedDates })
             .eq('id', habitId)
             .select()
             .single();
 
         if (error) {
             console.error(error);
+            showToast('取り消しに失敗しました。もう一度お試しください');
+            habit.completedDates = prevCompleted;
+            habit.skippedDates = prevSkipped;
+            renderGoals();
             return;
         }
-
-        habit.completedDates = data.completed_dates || nextDates;
-        habit.skippedDates = data.skipped_dates || nextSkipped;
-        renderGoals();
+        habit.completedDates = data.completed_dates || habit.completedDates;
+        habit.skippedDates = data.skipped_dates || habit.skippedDates;
     }
 
     // 目標の削除
@@ -235,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { error } = await supabase.from('habits').delete().eq('id', habitId);
         if (error) {
             console.error(error);
+            showToast('削除に失敗しました');
             habits = prev;
             renderGoals();
         }
@@ -285,6 +345,9 @@ document.addEventListener('DOMContentLoaded', () => {
         habits.forEach(habit => {
             const card = document.createElement('div');
             card.className = 'goal-card';
+            if (habit.id === lastToggledHabitId) {
+                card.classList.add('just-checked');
+            }
 
             const header = document.createElement('div');
             header.className = 'goal-header';
@@ -389,6 +452,8 @@ document.addEventListener('DOMContentLoaded', () => {
             goalsContainer.appendChild(card);
         });
 
+        lastToggledHabitId = null;
+
         document.querySelectorAll('.delete-goal-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 deleteHabit(e.target.dataset.id);
@@ -476,6 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGoals();
     }
 
+    initTheme();
     loadBackground();
     initSession();
 });

@@ -7,22 +7,38 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f2027">
+    <script>
+        (function () {
+            var saved = localStorage.getItem('100days_theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.dataset.theme = saved;
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div id="init-error" class="init-error" hidden></div>
+    <div id="toast" class="toast" hidden></div>
 
     <div class="app-container" id="app-container" hidden>
         <header>
-            <h1>100 Days Challenge</h1>
+            <div class="hero-icon">🔥</div>
+            <p class="hero-eyebrow">100 Days Challenge</p>
+            <h1>続けることが、<br>いちばんの力になる。</h1>
+            <p class="hero-sub">今日という1日を積み重ねて、<br>100日後の自分をつくる。</p>
 
-            <div class="bg-control">
-                <label for="bg-upload" class="bg-upload-label">
-                    📷 背景画像を選択
-                </label>
-                <input type="file" id="bg-upload" accept="image/*" style="display: none;">
+            <div class="header-controls">
+                <div class="bg-control">
+                    <label for="bg-upload" class="bg-upload-label">
+                        📷 背景画像
+                    </label>
+                    <input type="file" id="bg-upload" accept="image/*" style="display: none;">
+                </div>
+                <button id="theme-toggle-btn" class="theme-toggle-btn" type="button">🌙 ダーク</button>
+                <button id="reset-all-btn" class="reset-btn">全データリセット</button>
             </div>
 
             <!-- 目標追加フォーム -->
@@ -31,8 +47,6 @@
                 <button id="add-goal-btn">追加</button>
             </div>
             <div class="goal-limit-text">※ 目標は最大10個まで登録できます (<span id="goal-count-display">0</span>/10)</div>
-            
-            <button id="reset-all-btn" class="reset-btn">全データリセット</button>
         </header>
 
         <main>
