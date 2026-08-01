@@ -12,10 +12,38 @@
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div class="app-container">
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-card">
+            <h1>100 Days Challenge</h1>
+            <p class="auth-sub">続けるにはログインしてください</p>
+            <form id="auth-form" class="auth-form">
+                <div class="form-row">
+                    <label for="auth-email">メールアドレス</label>
+                    <input type="email" id="auth-email" required autocomplete="username">
+                </div>
+                <div class="form-row">
+                    <label for="auth-password">パスワード</label>
+                    <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
+                </div>
+                <p id="auth-error" class="auth-error" hidden></p>
+                <p id="auth-notice" class="auth-notice" hidden></p>
+                <div class="auth-actions">
+                    <button type="submit" id="auth-login-btn">ログイン</button>
+                    <button type="button" id="auth-signup-btn" class="auth-signup-btn">新規登録</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" hidden>
         <header>
             <h1>100 Days Challenge</h1>
-            
+
+            <div class="user-bar">
+                <span id="user-email" class="user-email"></span>
+                <button id="logout-btn" class="logout-btn">ログアウト</button>
+            </div>
+
             <div class="bg-control">
                 <label for="bg-upload" class="bg-upload-label">
                     📷 背景画像を選択
@@ -42,6 +70,6 @@
 
     <!-- 紙吹雪アニメーション用のライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

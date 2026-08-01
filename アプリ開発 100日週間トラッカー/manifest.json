@@ -8,12 +8,12 @@
   "description": "A beautiful 100 days habit tracking application.",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192/00f2fe/ffffff?text=100",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://via.placeholder.com/512/00f2fe/ffffff?text=100",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

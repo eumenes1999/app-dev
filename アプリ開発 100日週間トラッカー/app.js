@@ -1,39 +1,59 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 document.addEventListener('DOMContentLoaded', () => {
+    const SUPABASE_URL = 'https://wgfchfcfgznfhdyefnpg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_F-fw5O5XBoxsm9dHciOijg_U3ta5mmM';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const LOCAL_GOALS_KEY = '100days_goals';
+
     const goalsContainer = document.getElementById('goals-container');
     const goalInput = document.getElementById('goal-input');
     const addGoalBtn = document.getElementById('add-goal-btn');
     const goalCountDisplay = document.getElementById('goal-count-display');
     const resetAllBtn = document.getElementById('reset-all-btn');
     const bgUpload = document.getElementById('bg-upload');
-    
+
+    const authScreen = document.getElementById('auth-screen');
+    const appContainer = document.getElementById('app-container');
+    const authForm = document.getElementById('auth-form');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const authError = document.getElementById('auth-error');
+    const authNotice = document.getElementById('auth-notice');
+    const authSignupBtn = document.getElementById('auth-signup-btn');
+    const userEmailEl = document.getElementById('user-email');
+    const logoutBtn = document.getElementById('logout-btn');
+
     const TOTAL_DAYS = 100;
     const MAX_GOALS = 10;
-    
-    // データマイグレーション（古い completedDays[1,2] モデルから、日付文字列表現['2026-04-26']の配列へ変換）
-    let rawData = localStorage.getItem('100days_goals');
-    let goals = JSON.parse(rawData) || [];
-    
-    const todayStr = new Date().toDateString(); // "Sun Apr 26 2026"
 
-    goals = goals.map(g => {
-        // もし古い形式(数字配列)だったら、長さを日数とみなすマイグレーション
-        if (g.completedDays && g.completedDays.length > 0 && typeof g.completedDays[0] === 'number') {
-            const count = g.completedDays.length;
-            // 仮想的に過去の日付文字列などで埋めることもできるが、シンプルに「今日までにCount回達成した」状態にする
-            g.completedDates = Array(count).fill('past-date');
-            delete g.completedDays;
-        }
-        // なければ初期化
-        if (!g.completedDates && g.completedDays) {
-            g.completedDates = g.completedDays; 
-        }
-        if (!g.completedDates) {
-            g.completedDates = [];
-        }
-        return g;
-    });
+    let habits = [];
 
-    // 背景画像の処理
+    // ---- 日付ユーティリティ（すべてローカルタイムのYYYY-MM-DD文字列で統一） ----
+    function toIso(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function parseIso(iso) {
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    function addDaysIso(iso, n) {
+        const date = parseIso(iso);
+        date.setDate(date.getDate() + n);
+        return toIso(date);
+    }
+
+    function todayIso() {
+        return toIso(new Date());
+    }
+
+    // ---- 背景画像（端末ローカルのみ。同期はしない） ----
     if (bgUpload) {
         bgUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -60,15 +80,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 目標の保存
-    function saveGoals() {
-        localStorage.setItem('100days_goals', JSON.stringify(goals));
-        updateGoalCount();
+    // ---- Supabase読み書き ----
+    async function loadHabits() {
+        const { data, error } = await supabase
+            .from('habits')
+            .select('*')
+            .order('created_at', { ascending: true });
+        if (error) {
+            console.error(error);
+            habits = [];
+            return;
+        }
+        habits = data.map(rowToHabit);
+    }
+
+    function rowToHabit(row) {
+        return {
+            id: row.id,
+            title: row.title,
+            completedDates: row.completed_dates || [],
+            createdAt: row.created_at.slice(0, 10),
+        };
     }
 
     function updateGoalCount() {
-        goalCountDisplay.textContent = goals.length;
-        if (goals.length >= MAX_GOALS) {
+        goalCountDisplay.textContent = habits.length;
+        if (habits.length >= MAX_GOALS) {
             addGoalBtn.disabled = true;
             goalInput.placeholder = "上限（10個）に達しました";
             goalInput.disabled = true;
@@ -80,19 +117,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 目標の追加
-    addGoalBtn.addEventListener('click', () => {
+    addGoalBtn.addEventListener('click', async () => {
         const title = goalInput.value.trim();
-        if (title && goals.length < MAX_GOALS) {
-            const newGoal = {
-                id: Date.now().toString(),
-                title: title,
-                completedDates: []
-            };
-            goals.push(newGoal);
-            saveGoals();
-            goalInput.value = '';
-            renderGoals(); // 再描画
+        if (!title || habits.length >= MAX_GOALS) return;
+
+        const { data, error } = await supabase
+            .from('habits')
+            .insert({ title })
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            return;
         }
+
+        habits.push(rowToHabit(data));
+        goalInput.value = '';
+        renderGoals();
     });
 
     goalInput.addEventListener('keypress', (e) => {
@@ -102,66 +144,112 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 全リセット
-    resetAllBtn.addEventListener('click', () => {
-        if (confirm('すべての目標と進捗データを削除しますか？この操作は元に戻せません。')) {
-            goals = [];
-            saveGoals();
+    resetAllBtn.addEventListener('click', async () => {
+        if (!confirm('すべての目標と進捗データを削除しますか？この操作は元に戻せません。')) return;
+        const prev = habits;
+        habits = [];
+        renderGoals();
+        const { error } = await supabase.from('habits').delete().not('id', 'is', null);
+        if (error) {
+            console.error(error);
+            habits = prev;
             renderGoals();
         }
     });
 
-    // 1日分のチェックトグル処理
-    function checkToday(goalId, btnElement) {
-        const goal = goals.find(g => g.id === goalId);
-        if (!goal) return;
+    // 1日分のチェック
+    async function checkToday(habitId, btnElement) {
+        const habit = habits.find(h => h.id === habitId);
+        if (!habit) return;
+        const today = todayIso();
+        if (habit.completedDates.includes(today)) return;
 
-        if (goal.completedDates.includes(todayStr)) {
-            // 既に完了済みの場合は取り消し可能にするオプション（今回は完了後に押せなくしているのでここは基本的に呼ばれない）
+        const nextDates = [...habit.completedDates, today];
+        const { data, error } = await supabase
+            .from('habits')
+            .update({ completed_dates: nextDates })
+            .eq('id', habitId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
             return;
-        } else {
-            // 今日の分を達成！
-            goal.completedDates.push(todayStr);
-            triggerConfetti(btnElement);
-            saveGoals();
-            renderGoals(); // 画面を再描画して状態を反映
         }
+
+        habit.completedDates = data.completed_dates || nextDates;
+        triggerConfetti(btnElement);
+        renderGoals();
     }
 
     // 目標の削除
-    function deleteGoal(goalId) {
-        if (confirm('この習慣を削除しますか？')) {
-            goals = goals.filter(g => g.id !== goalId);
-            saveGoals();
+    async function deleteHabit(habitId) {
+        if (!confirm('この習慣を削除しますか？')) return;
+        const prev = habits;
+        habits = habits.filter(h => h.id !== habitId);
+        renderGoals();
+        const { error } = await supabase.from('habits').delete().eq('id', habitId);
+        if (error) {
+            console.error(error);
+            habits = prev;
             renderGoals();
         }
+    }
+
+    // 連続日数（今日 or 昨日を起点に遡ってカウント）
+    function calcStreak(completedDates, today) {
+        const doneSet = new Set(completedDates);
+        let cursor = doneSet.has(today) ? today : addDaysIso(today, -1);
+        let streak = 0;
+        while (doneSet.has(cursor)) {
+            streak += 1;
+            cursor = addDaysIso(cursor, -1);
+        }
+        return streak;
+    }
+
+    // 100日ぶんのマス目データを生成
+    function buildDayCells(habit, today) {
+        const doneSet = new Set(habit.completedDates);
+        const cells = [];
+        for (let i = 0; i < TOTAL_DAYS; i++) {
+            const iso = addDaysIso(habit.createdAt, i);
+            let state;
+            if (doneSet.has(iso)) state = 'done';
+            else if (iso === today) state = 'today';
+            else if (iso < today) state = 'missed';
+            else state = 'future';
+            cells.push({ iso, state });
+        }
+        return cells;
     }
 
     // 画面の描画（カード生成）
     function renderGoals() {
         goalsContainer.innerHTML = '';
-        
-        if(goals.length === 0) {
+        const today = todayIso();
+
+        if (habits.length === 0) {
             goalsContainer.innerHTML = `<div style="text-align:center; color:var(--text-secondary); padding: 2rem;">目標がありません。上の入力欄から新しい習慣を追加してください！</div>`;
+            updateGoalCount();
             return;
         }
 
-        goals.forEach(goal => {
+        habits.forEach(habit => {
             const card = document.createElement('div');
             card.className = 'goal-card';
-            
-            // ヘッダー（タイトルと削除ボタン）
+
             const header = document.createElement('div');
             header.className = 'goal-header';
             header.innerHTML = `
-                <div class="goal-title">${goal.title}</div>
-                <button class="delete-goal-btn" data-id="${goal.id}">✖</button>
+                <div class="goal-title">${habit.title}</div>
+                <button class="delete-goal-btn" data-id="${habit.id}">✖</button>
             `;
-            
-            // 日数カウントと進捗計算
-            const count = goal.completedDates.length;
+
+            const count = habit.completedDates.length;
+            const streak = calcStreak(habit.completedDates, today);
             const percentage = Math.min((count / TOTAL_DAYS) * 100, 100);
-            
-            // 日数表示エリア
+
             const dayDisplay = document.createElement('div');
             dayDisplay.className = 'day-display';
             dayDisplay.innerHTML = `
@@ -169,7 +257,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="day-number-large">${count} <span style="font-size: 1rem; color: var(--text-secondary);">日目</span></div>
             `;
 
-            // 進捗バー
+            const subStats = document.createElement('div');
+            subStats.className = 'sub-stats';
+            subStats.innerHTML = `
+                <div class="sub-stat">
+                    <div class="sub-stat-value">🔥 ${streak}</div>
+                    <div class="sub-stat-label">連続日数</div>
+                </div>
+                <div class="sub-stat">
+                    <div class="sub-stat-value">${Math.round(percentage)}%</div>
+                    <div class="sub-stat-label">達成率</div>
+                </div>
+            `;
+
             const progressWrapper = document.createElement('div');
             progressWrapper.className = 'progress-wrapper';
             progressWrapper.innerHTML = `
@@ -177,39 +277,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="progress-bar-fill" style="width: ${percentage}%"></div>
                 </div>
             `;
-            
-            // 今日の分チェックアクション
-            const isCompletedToday = goal.completedDates.includes(todayStr);
+
+            const dayGrid = document.createElement('div');
+            dayGrid.className = 'day-grid';
+            buildDayCells(habit, today).forEach(cell => {
+                const cellEl = document.createElement('div');
+                cellEl.className = `day-cell ${cell.state}`;
+                cellEl.title = cell.iso;
+                dayGrid.appendChild(cellEl);
+            });
+
+            const isCompletedToday = habit.completedDates.includes(today);
             const checkBtn = document.createElement('button');
             checkBtn.className = 'check-today-btn';
-            
+
             if (isCompletedToday) {
                 checkBtn.classList.add('completed');
                 checkBtn.innerHTML = '今日は達成済み！ ✓';
-                // 完了済みでもう一度押したら取り消せるようにしたい場合は、以下のpointer-eventsやdisabledを解除します
-                // ここでは連打防止のためCSSでpointer-events: noneにしています
             } else {
                 checkBtn.innerHTML = '今日の分をチェック';
                 checkBtn.addEventListener('click', (e) => {
-                    checkToday(goal.id, e.target);
+                    checkToday(habit.id, e.target);
                 });
             }
 
             card.appendChild(header);
             card.appendChild(dayDisplay);
+            card.appendChild(subStats);
             card.appendChild(progressWrapper);
+            card.appendChild(dayGrid);
             card.appendChild(checkBtn);
-            
+
             goalsContainer.appendChild(card);
         });
 
-        // 削除ボタンにイベント割り当て
         document.querySelectorAll('.delete-goal-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                deleteGoal(e.target.dataset.id);
+                deleteHabit(e.target.dataset.id);
             });
         });
-        
+
         updateGoalCount();
     }
 
@@ -218,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rect = element.getBoundingClientRect();
         const x = (rect.left + rect.width / 2) / window.innerWidth;
         const y = (rect.top + rect.height / 2) / window.innerHeight;
-        
+
         confetti({
             particleCount: 50,
             spread: 70,
@@ -228,7 +335,111 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 初期化
+    // ---- 既存localStorageデータの初回インポート ----
+    async function importLocalGoalsIfAny() {
+        const raw = localStorage.getItem(LOCAL_GOALS_KEY);
+        if (!raw) return;
+
+        let localGoals;
+        try {
+            localGoals = JSON.parse(raw);
+        } catch (e) {
+            return;
+        }
+        if (!Array.isArray(localGoals) || localGoals.length === 0) return;
+        if (habits.length > 0) return; // 既にクラウド側にデータがあれば何もしない
+
+        const ok = confirm(`この端末に保存されていた過去の習慣データ（${localGoals.length}件）が見つかりました。アカウントに取り込みますか？`);
+        if (!ok) return;
+
+        for (const g of localGoals) {
+            const rawDates = Array.isArray(g.completedDates) ? g.completedDates : [];
+            const parsedDates = rawDates
+                .map(s => new Date(s))
+                .filter(d => !isNaN(d.getTime()))
+                .map(toIso);
+            const uniqueDates = [...new Set(parsedDates)].sort();
+            const createdAt = uniqueDates.length > 0 ? uniqueDates[0] : todayIso();
+
+            const { error } = await supabase.from('habits').insert({
+                title: (g.title || '習慣').slice(0, 30),
+                completed_dates: uniqueDates,
+                created_at: `${createdAt}T00:00:00Z`,
+            });
+            if (error) console.error(error);
+        }
+
+        localStorage.removeItem(LOCAL_GOALS_KEY);
+        await loadHabits();
+    }
+
+    // ---- 認証 ----
+    function showAuthError(message) {
+        authError.textContent = message;
+        authError.hidden = !message;
+    }
+
+    function showAuthNotice(message) {
+        authNotice.textContent = message;
+        authNotice.hidden = !message;
+    }
+
+    async function showApp(session) {
+        authScreen.hidden = true;
+        appContainer.hidden = false;
+        userEmailEl.textContent = session.user.email ?? '';
+        await loadHabits();
+        await importLocalGoalsIfAny();
+        renderGoals();
+    }
+
+    function showAuthScreen() {
+        appContainer.hidden = true;
+        authScreen.hidden = false;
+        habits = [];
+    }
+
+    function initAuth() {
+        authForm.addEventListener('submit', async (evt) => {
+            evt.preventDefault();
+            showAuthError('');
+            showAuthNotice('');
+            const email = authEmail.value.trim();
+            const password = authPassword.value;
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) showAuthError(error.message);
+        });
+
+        authSignupBtn.addEventListener('click', async () => {
+            showAuthError('');
+            showAuthNotice('');
+            const email = authEmail.value.trim();
+            const password = authPassword.value;
+            if (!email || !password) {
+                showAuthError('メールアドレスとパスワードを入力してください。');
+                return;
+            }
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) {
+                showAuthError(error.message);
+                return;
+            }
+            showAuthNotice('登録しました。確認メールが届いた場合はリンクを開いてからログインしてください。');
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+        });
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+            if (session) {
+                showApp(session);
+            } else {
+                showAuthScreen();
+            }
+        });
+    }
+
     loadBackground();
-    renderGoals();
+    initAuth();
 });
