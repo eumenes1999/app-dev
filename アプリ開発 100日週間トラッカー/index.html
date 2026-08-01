@@ -30,17 +30,6 @@
             <h1>続けることが、<br>いちばんの力になる。</h1>
             <p class="hero-sub">今日という1日を積み重ねて、<br>100日後の自分をつくる。</p>
 
-            <div class="header-controls">
-                <div class="bg-control">
-                    <label for="bg-upload" class="bg-upload-label">
-                        📷 背景画像
-                    </label>
-                    <input type="file" id="bg-upload" accept="image/*" style="display: none;">
-                </div>
-                <button id="theme-toggle-btn" class="theme-toggle-btn" type="button">🌙 ダーク</button>
-                <button id="reset-all-btn" class="reset-btn">全データリセット</button>
-            </div>
-
             <!-- 目標追加フォーム -->
             <div class="add-goal-container">
                 <input type="text" id="goal-input" placeholder="新しい目標を入力 (例: 読書を15分する)" maxlength="30">
@@ -52,6 +41,7 @@
         <div class="view-tabs">
             <button id="tab-habits-btn" class="view-tab active" type="button">習慣</button>
             <button id="tab-memos-btn" class="view-tab" type="button">メモ</button>
+            <button id="tab-settings-btn" class="view-tab view-tab-icon" type="button" aria-label="設定">⚙️</button>
         </div>
 
         <main id="habits-view">
@@ -77,6 +67,33 @@
                 <h2 id="memo-archive-title">過去のメモ</h2>
                 <div id="memo-archive-list" class="memo-archive-list"></div>
                 <p id="memo-empty" class="empty-note" hidden>まだメモがありません。</p>
+            </section>
+        </main>
+
+        <main id="settings-view" hidden>
+            <section class="settings-section">
+                <h2>背景画像</h2>
+                <div class="settings-row">
+                    <label for="bg-upload" class="bg-upload-label">
+                        📷 画像を選択
+                    </label>
+                    <input type="file" id="bg-upload" accept="image/*" style="display: none;">
+                    <button id="reset-bg-btn" class="settings-btn" type="button">デフォルトに戻す</button>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h2>テーマ</h2>
+                <div class="settings-row">
+                    <button id="theme-toggle-btn" class="settings-btn" type="button">🌙 ダーク</button>
+                </div>
+            </section>
+
+            <section class="settings-section settings-section-danger">
+                <h2>データ</h2>
+                <div class="settings-row">
+                    <button id="reset-all-btn" class="settings-btn settings-btn-danger" type="button">全データリセット</button>
+                </div>
             </section>
         </main>
     </div>

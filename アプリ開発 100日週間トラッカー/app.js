@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const goalCountDisplay = document.getElementById('goal-count-display');
     const resetAllBtn = document.getElementById('reset-all-btn');
     const bgUpload = document.getElementById('bg-upload');
+    const resetBgBtn = document.getElementById('reset-bg-btn');
 
     const appContainer = document.getElementById('app-container');
     const initErrorEl = document.getElementById('init-error');
@@ -21,8 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tabHabitsBtn = document.getElementById('tab-habits-btn');
     const tabMemosBtn = document.getElementById('tab-memos-btn');
+    const tabSettingsBtn = document.getElementById('tab-settings-btn');
     const habitsView = document.getElementById('habits-view');
     const memosView = document.getElementById('memos-view');
+    const settingsView = document.getElementById('settings-view');
     const memoHabitSelect = document.getElementById('memo-habit-select');
     const memoWeekSection = document.getElementById('memo-week-section');
     const memoWeekList = document.getElementById('memo-week-list');
@@ -116,6 +119,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedBg) {
             document.body.style.backgroundImage = `url(${savedBg})`;
         }
+    }
+
+    if (resetBgBtn) {
+        resetBgBtn.addEventListener('click', () => {
+            localStorage.removeItem('100days_bg');
+            document.body.style.backgroundImage = '';
+            showToast('背景画像をデフォルトに戻しました');
+        });
     }
 
     // ---- Supabase読み書き ----
@@ -694,18 +705,20 @@ document.addEventListener('DOMContentLoaded', () => {
     memoHabitSelect.addEventListener('change', renderMemoView);
 
     function switchView(view) {
-        const showHabits = view === 'habits';
-        habitsView.hidden = !showHabits;
-        memosView.hidden = showHabits;
-        tabHabitsBtn.classList.toggle('active', showHabits);
-        tabMemosBtn.classList.toggle('active', !showHabits);
-        if (!showHabits) {
+        habitsView.hidden = view !== 'habits';
+        memosView.hidden = view !== 'memos';
+        settingsView.hidden = view !== 'settings';
+        tabHabitsBtn.classList.toggle('active', view === 'habits');
+        tabMemosBtn.classList.toggle('active', view === 'memos');
+        tabSettingsBtn.classList.toggle('active', view === 'settings');
+        if (view === 'memos') {
             renderMemoView();
         }
     }
 
     tabHabitsBtn.addEventListener('click', () => switchView('habits'));
     tabMemosBtn.addEventListener('click', () => switchView('memos'));
+    tabSettingsBtn.addEventListener('click', () => switchView('settings'));
 
     // ---- セッション（匿名ログイン。ログイン画面なし、この端末専用の識別子を自動発行） ----
     function showInitError(message) {

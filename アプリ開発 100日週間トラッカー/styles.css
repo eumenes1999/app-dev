@@ -114,46 +114,6 @@ header h1 {
     margin-bottom: 2rem;
 }
 
-.header-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 1.25rem;
-}
-
-.bg-upload-label {
-    background: rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(6px);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: #fff;
-    transition: background 0.2s ease;
-}
-
-.bg-upload-label:hover {
-    background: rgba(255, 255, 255, 0.28);
-}
-
-.reset-btn {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-
-.reset-btn:hover {
-    color: #fff;
-}
-
 /* 目標追加フォーム */
 .add-goal-container {
     display: flex;
@@ -403,9 +363,9 @@ header h1 {
 }
 
 @media (max-width: 480px) {
-    .header-controls {
+    .settings-row {
         flex-direction: column;
-        gap: 8px;
+        align-items: stretch;
     }
     .day-number-large {
         font-size: 3.4rem;
@@ -429,23 +389,6 @@ header h1 {
     color: var(--accent-color);
     font-weight: 600;
     font-size: 0.9rem;
-}
-
-.theme-toggle-btn {
-    background: rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(6px);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: #fff;
-    transition: background 0.2s ease;
-}
-
-.theme-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
 }
 
 /* 操作失敗時の一時的な通知（保存に失敗した時など） */
@@ -685,4 +628,58 @@ header h1 {
     color: var(--text-secondary);
     font-size: 0.85rem;
     padding: 1rem 0;
+}
+
+/* タブの歯車アイコン（設定）だけ横幅を狭くする */
+.view-tab-icon {
+    flex: 0 0 auto;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+}
+
+/* 設定画面 */
+.settings-section {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.settings-section h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bg-upload-label,
+.settings-btn {
+    background: rgba(127, 127, 127, 0.12);
+    border: none;
+    padding: 0.7rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.2s ease;
+}
+
+.bg-upload-label:hover,
+.settings-btn:hover {
+    background: rgba(127, 127, 127, 0.22);
+}
+
+.settings-section-danger .settings-btn-danger {
+    background: rgba(255, 45, 85, 0.12);
+    color: var(--accent-color);
+}
+
+.settings-section-danger .settings-btn-danger:hover {
+    background: rgba(255, 45, 85, 0.22);
 }
