@@ -12,6 +12,9 @@ create table if not exists public.habits (
 -- スキップ機能（既存テーブルに対する追記マイグレーション。新規作成時も既存テーブルへの追加時もそのまま実行可）
 alter table public.habits add column if not exists skipped_dates date[] not null default '{}';
 
+-- カード背景色のカスタマイズ（プリセットのキー文字列を保存。nullなら自動ローテーション色を使う）
+alter table public.habits add column if not exists color text;
+
 alter table public.habits enable row level security;
 
 create policy "select own habits"

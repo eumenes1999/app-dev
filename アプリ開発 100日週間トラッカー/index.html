@@ -27,8 +27,8 @@
         <header>
             <div class="hero-icon">🔥</div>
             <p class="hero-eyebrow">100 Days Challenge</p>
-            <h1>続けることが、<br>いちばんの力になる。</h1>
-            <p class="hero-sub">今日という1日を積み重ねて、<br>100日後の自分をつくる。</p>
+            <h1 id="hero-headline">続けることが、いちばんの力になる。</h1>
+            <p class="hero-sub" id="hero-subtext">今日という1日を積み重ねて、100日後の自分をつくる。</p>
 
             <!-- 目標追加フォーム -->
             <div class="add-goal-container">
@@ -71,6 +71,18 @@
         </main>
 
         <main id="settings-view" hidden>
+            <section class="settings-section">
+                <h2>トップページの文言</h2>
+                <div class="settings-field">
+                    <label for="headline-input">見出し</label>
+                    <input type="text" id="headline-input" maxlength="24" placeholder="続けることが、いちばんの力になる。">
+                </div>
+                <div class="settings-field">
+                    <label for="subtext-input">補足文</label>
+                    <input type="text" id="subtext-input" maxlength="36" placeholder="今日という1日を積み重ねて、100日後の自分をつくる。">
+                </div>
+            </section>
+
             <section class="settings-section">
                 <h2>背景画像</h2>
                 <div class="settings-row">

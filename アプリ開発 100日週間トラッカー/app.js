@@ -33,6 +33,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const memoArchiveList = document.getElementById('memo-archive-list');
     const memoEmptyEl = document.getElementById('memo-empty');
 
+    const heroHeadlineEl = document.getElementById('hero-headline');
+    const heroSubtextEl = document.getElementById('hero-subtext');
+    const headlineInput = document.getElementById('headline-input');
+    const subtextInput = document.getElementById('subtext-input');
+
+    // ---- トップページの文言（端末ローカルのみ。未設定時はデフォルト文言） ----
+    const HEADLINE_KEY = '100days_headline';
+    const SUBTEXT_KEY = '100days_subtext';
+    const DEFAULT_HEADLINE = '続けることが、いちばんの力になる。';
+    const DEFAULT_SUBTEXT = '今日という1日を積み重ねて、100日後の自分をつくる。';
+
+    function applyHeroText() {
+        const headline = localStorage.getItem(HEADLINE_KEY) || DEFAULT_HEADLINE;
+        const subtext = localStorage.getItem(SUBTEXT_KEY) || DEFAULT_SUBTEXT;
+        heroHeadlineEl.textContent = headline;
+        heroSubtextEl.textContent = subtext;
+        headlineInput.value = localStorage.getItem(HEADLINE_KEY) || '';
+        subtextInput.value = localStorage.getItem(SUBTEXT_KEY) || '';
+    }
+
+    headlineInput.addEventListener('blur', () => {
+        const value = headlineInput.value.trim();
+        if (value) localStorage.setItem(HEADLINE_KEY, value);
+        else localStorage.removeItem(HEADLINE_KEY);
+        applyHeroText();
+    });
+
+    subtextInput.addEventListener('blur', () => {
+        const value = subtextInput.value.trim();
+        if (value) localStorage.setItem(SUBTEXT_KEY, value);
+        else localStorage.removeItem(SUBTEXT_KEY);
+        applyHeroText();
+    });
+
     // ---- テーマ切り替え（ダーク/ライト。未選択時はOS設定に追従） ----
     const THEME_KEY = '100days_theme';
 
@@ -151,7 +185,29 @@ document.addEventListener('DOMContentLoaded', () => {
             completedDates: row.completed_dates || [],
             skippedDates: row.skipped_dates || [],
             createdAt: row.created_at.slice(0, 10),
+            color: row.color || null,
         };
+    }
+
+    const CARD_COLORS = ['pink', 'purple', 'orange', 'green', 'blue', 'teal', 'red', 'indigo'];
+
+    async function setHabitColor(habit, colorKey) {
+        const prevColor = habit.color;
+        const nextColor = habit.color === colorKey ? null : colorKey; // もう一度押したら自動ローテーションに戻す
+        habit.color = nextColor;
+        renderGoals();
+
+        const { error } = await supabase
+            .from('habits')
+            .update({ color: nextColor })
+            .eq('id', habit.id);
+
+        if (error) {
+            console.error(error);
+            showToast('色の変更に失敗しました');
+            habit.color = prevColor;
+            renderGoals();
+        }
     }
 
     function updateGoalCount() {
@@ -213,6 +269,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // 直前に操作したカードのid。renderGoals()側でポップアニメーションを付けるのに使う
     let lastToggledHabitId = null;
 
+    // 継続チェック時にランダムで出す応援コメント（また明日も続けたくなるようなポジティブな言葉）
+    const ENCOURAGEMENTS = [
+        'その調子、いい流れ！🔥',
+        '今日もやり切ったね',
+        'また一歩、積み上がった',
+        '続けてる自分、えらい',
+        '小さな一歩が未来を作る',
+        'この調子で明日もいこう',
+        '着実に前進してるよ',
+        '今日のあなた、最高',
+        '積み重ねが力になる',
+        'よくやった、自分！',
+        'コツコツが一番強い',
+        '今日も有言実行だね',
+        '習慣になりつつあるね',
+        'この一歩が未来を変える',
+        '続けるって、才能だよ',
+        '今日も自分に勝った',
+        '地道な努力、見てるよ',
+        'また記録が伸びたね',
+        'この流れ、大事にしよう',
+        '毎日の積み重ね、すごい',
+    ];
+
+    function pickEncouragement() {
+        return ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
+    }
+
     // 1日分のチェック（即座に画面へ反映し、裏でSupabaseへ保存。失敗時のみ元に戻す）
     async function checkToday(habitId, btnElement) {
         const habit = habits.find(h => h.id === habitId);
@@ -227,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lastToggledHabitId = habitId;
         triggerConfetti(btnElement);
         renderGoals();
+        showToast(pickEncouragement());
 
         const { data, error } = await supabase
             .from('habits')
@@ -396,6 +481,9 @@ document.addEventListener('DOMContentLoaded', () => {
         habits.forEach(habit => {
             const card = document.createElement('div');
             card.className = 'goal-card';
+            if (habit.color) {
+                card.classList.add(`card-color-${habit.color}`);
+            }
             if (habit.id === lastToggledHabitId) {
                 card.classList.add('just-checked');
             }
@@ -406,6 +494,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="goal-title">${habit.title}</div>
                 <button class="delete-goal-btn" data-id="${habit.id}">✖</button>
             `;
+
+            const colorPicker = document.createElement('div');
+            colorPicker.className = 'card-color-picker';
+            CARD_COLORS.forEach(colorKey => {
+                const swatch = document.createElement('button');
+                swatch.type = 'button';
+                swatch.className = `card-color-swatch${habit.color === colorKey ? ' selected' : ''}`;
+                swatch.dataset.color = colorKey;
+                swatch.setAttribute('aria-label', `カード色: ${colorKey}`);
+                swatch.addEventListener('click', () => setHabitColor(habit, colorKey));
+                colorPicker.appendChild(swatch);
+            });
 
             const count = habit.completedDates.length;
             const streak = calcStreak(habit.completedDates, habit.skippedDates, today);
@@ -494,6 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             card.appendChild(header);
+            card.appendChild(colorPicker);
             card.appendChild(dayDisplay);
             card.appendChild(subStats);
             card.appendChild(progressWrapper);
@@ -778,6 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initTheme();
+    applyHeroText();
     loadBackground();
     initSession();
 });

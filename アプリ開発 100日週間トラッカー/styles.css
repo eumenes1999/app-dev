@@ -112,6 +112,7 @@ header h1 {
     line-height: 1.6;
     color: rgba(255, 255, 255, 0.8);
     margin-bottom: 2rem;
+    text-wrap: balance;
 }
 
 /* 目標追加フォーム */
@@ -730,3 +731,82 @@ header h1 {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.7);
 }
+
+/* 設定画面：トップページの文言編集フィールド */
+.settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.settings-field + .settings-field {
+    margin-top: 1rem;
+}
+
+.settings-field label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.settings-field input {
+    border: 1.5px solid rgba(127, 127, 127, 0.25);
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.settings-field input:focus {
+    border-color: var(--accent-color);
+}
+
+/* カード背景色のプリセットスウォッチ */
+.card-color-picker {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1rem;
+}
+
+.card-color-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s ease;
+}
+
+.card-color-swatch:hover {
+    transform: scale(1.15);
+}
+
+.card-color-swatch.selected {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.card-color-swatch[data-color="pink"] { background: linear-gradient(160deg, #ff5c7c 0%, #b3123f 100%); }
+.card-color-swatch[data-color="purple"] { background: linear-gradient(160deg, #9a6bff 0%, #4b19a8 100%); }
+.card-color-swatch[data-color="orange"] { background: linear-gradient(160deg, #ffb648 0%, #d9660a 100%); }
+.card-color-swatch[data-color="green"] { background: linear-gradient(160deg, #3ddc84 0%, #0a7a45 100%); }
+.card-color-swatch[data-color="blue"] { background: linear-gradient(160deg, #4fc3f7 0%, #0a5b96 100%); }
+.card-color-swatch[data-color="teal"] { background: linear-gradient(160deg, #2dd4bf 0%, #0f766e 100%); }
+.card-color-swatch[data-color="red"] { background: linear-gradient(160deg, #ff6b6b 0%, #a11d1d 100%); }
+.card-color-swatch[data-color="indigo"] { background: linear-gradient(160deg, #6366f1 0%, #3730a3 100%); }
+
+/* カードの背景色プリセット（未指定の場合はnth-childの自動ローテーションに任せる。
+   ソース順で後にあるこのルール群がnth-childより優先される） */
+.goal-card.card-color-pink { background: linear-gradient(160deg, #ff5c7c 0%, #b3123f 100%); }
+.goal-card.card-color-purple { background: linear-gradient(160deg, #9a6bff 0%, #4b19a8 100%); }
+.goal-card.card-color-orange { background: linear-gradient(160deg, #ffb648 0%, #d9660a 100%); }
+.goal-card.card-color-green { background: linear-gradient(160deg, #3ddc84 0%, #0a7a45 100%); }
+.goal-card.card-color-blue { background: linear-gradient(160deg, #4fc3f7 0%, #0a5b96 100%); }
+.goal-card.card-color-teal { background: linear-gradient(160deg, #2dd4bf 0%, #0f766e 100%); }
+.goal-card.card-color-red { background: linear-gradient(160deg, #ff6b6b 0%, #a11d1d 100%); }
+.goal-card.card-color-indigo { background: linear-gradient(160deg, #6366f1 0%, #3730a3 100%); }
