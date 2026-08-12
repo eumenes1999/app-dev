@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetAllBtn = document.getElementById('reset-all-btn');
     const bgUpload = document.getElementById('bg-upload');
     const resetBgBtn = document.getElementById('reset-bg-btn');
+    const exportDataBtn = document.getElementById('export-data-btn');
+    const importDataInput = document.getElementById('import-data-input');
 
     const appContainer = document.getElementById('app-container');
     const initErrorEl = document.getElementById('init-error');
@@ -850,6 +852,106 @@ document.addEventListener('DOMContentLoaded', () => {
     tabHabitsBtn.addEventListener('click', () => switchView('habits'));
     tabMemosBtn.addEventListener('click', () => switchView('memos'));
     tabSettingsBtn.addEventListener('click', () => switchView('settings'));
+
+    // ---- データのバックアップ（匿名ログインはこの端末のストレージが消えると復元不能なため、書き出し/読み込みを用意） ----
+    if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', () => {
+            const payload = {
+                exportedAt: new Date().toISOString(),
+                version: 1,
+                habits: habits.map(h => ({
+                    id: h.id,
+                    title: h.title,
+                    completedDates: h.completedDates,
+                    skippedDates: h.skippedDates,
+                    createdAt: h.createdAt,
+                    color: h.color,
+                })),
+                memos: memos.map(m => ({
+                    habitId: m.habitId,
+                    habitTitle: m.habitTitle,
+                    date: m.date,
+                    content: m.content,
+                })),
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `100days-backup-${todayIso()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast('データを書き出しました');
+        });
+    }
+
+    if (importDataInput) {
+        importDataInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            importDataInput.value = '';
+            if (!file) return;
+
+            let backup;
+            try {
+                const text = await file.text();
+                backup = JSON.parse(text);
+            } catch (err) {
+                showToast('ファイルの読み込みに失敗しました');
+                return;
+            }
+
+            if (!backup || !Array.isArray(backup.habits)) {
+                showToast('バックアップファイルの形式が正しくありません');
+                return;
+            }
+
+            const habitCount = backup.habits.length;
+            const memoCount = Array.isArray(backup.memos) ? backup.memos.length : 0;
+            const ok = confirm(`習慣${habitCount}件・メモ${memoCount}件を取り込みます。既存のデータに追加される形になります。よろしいですか？`);
+            if (!ok) return;
+
+            const idMap = {};
+            for (const h of backup.habits) {
+                const { data, error } = await supabase
+                    .from('habits')
+                    .insert({
+                        title: (h.title || '習慣').slice(0, 30),
+                        completed_dates: Array.isArray(h.completedDates) ? h.completedDates : [],
+                        skipped_dates: Array.isArray(h.skippedDates) ? h.skippedDates : [],
+                        color: h.color || null,
+                        created_at: h.createdAt ? `${h.createdAt}T00:00:00Z` : new Date().toISOString(),
+                    })
+                    .select()
+                    .single();
+                if (error) {
+                    console.error(error);
+                    continue;
+                }
+                if (h.id) idMap[h.id] = data.id;
+            }
+
+            if (Array.isArray(backup.memos)) {
+                for (const m of backup.memos) {
+                    const newHabitId = m.habitId ? (idMap[m.habitId] || null) : null;
+                    const { error } = await supabase.from('habit_memos').insert({
+                        habit_id: newHabitId,
+                        habit_title: m.habitTitle || '習慣',
+                        date: m.date,
+                        content: m.content || '',
+                    });
+                    if (error) console.error(error);
+                }
+            }
+
+            await loadHabits();
+            await loadMemos();
+            populateMemoHabitSelect();
+            renderGoals();
+            showToast('データを取り込みました');
+        });
+    }
 
     // ---- セッション（匿名ログイン。ログイン画面なし、この端末専用の識別子を自動発行） ----
     function showInitError(message) {

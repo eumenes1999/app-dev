@@ -658,6 +658,13 @@ header h1 {
     gap: 10px;
 }
 
+.settings-note {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
 .bg-upload-label,
 .settings-btn {
     background: rgba(127, 127, 127, 0.12);

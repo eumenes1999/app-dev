@@ -101,6 +101,18 @@
                 </div>
             </section>
 
+            <section class="settings-section">
+                <h2>データのバックアップ</h2>
+                <p class="settings-note">この端末のブラウザデータが消えると、匿名ログインの性質上データは復元できません。定期的な書き出しをおすすめします。</p>
+                <div class="settings-row">
+                    <button id="export-data-btn" class="settings-btn" type="button">📤 エクスポート</button>
+                    <label for="import-data-input" class="bg-upload-label">
+                        📥 インポート
+                    </label>
+                    <input type="file" id="import-data-input" accept="application/json" style="display: none;">
+                </div>
+            </section>
+
             <section class="settings-section settings-section-danger">
                 <h2>データ</h2>
                 <div class="settings-row">
