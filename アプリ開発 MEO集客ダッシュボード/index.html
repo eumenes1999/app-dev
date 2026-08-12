@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>MEO集客ダッシュボード</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0d0d10">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div id="init-error" class="init-error" hidden></div>
+    <div id="toast" class="toast" hidden></div>
+
+    <div class="app-container" id="app-container" hidden>
+        <header>
+            <p class="eyebrow">MEO集客レポート（練習用ダミーデータ）</p>
+            <h1>月次パフォーマンス ダッシュボード</h1>
+            <p class="sub">検索・マップの表示回数からユーザーアクションまで、店舗の集客状況を月単位で記録・可視化します。</p>
+        </header>
+
+        <section class="card">
+            <h2>月次データを追加</h2>
+            <form id="report-form" class="report-form">
+                <div class="form-row">
+                    <label for="input-month">対象月</label>
+                    <input type="month" id="input-month" required>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label for="input-search">検索表示回数</label>
+                        <input type="number" id="input-search" min="0" placeholder="例: 3200">
+                    </div>
+                    <div class="form-row">
+                        <label for="input-map">マップ表示回数</label>
+                        <input type="number" id="input-map" min="0" placeholder="例: 1800">
+                    </div>
+                    <div class="form-row">
+                        <label for="input-clicks">サイトクリック数</label>
+                        <input type="number" id="input-clicks" min="0" placeholder="例: 210">
+                    </div>
+                    <div class="form-row">
+                        <label for="input-calls">電話タップ数</label>
+                        <input type="number" id="input-calls" min="0" placeholder="例: 45">
+                    </div>
+                    <div class="form-row">
+                        <label for="input-directions">ルート検索数</label>
+                        <input type="number" id="input-directions" min="0" placeholder="例: 90">
+                    </div>
+                    <div class="form-row">
+                        <label for="input-reviews">クチコミ新規獲得数</label>
+                        <input type="number" id="input-reviews" min="0" placeholder="例: 6">
+                    </div>
+                    <div class="form-row">
+                        <label for="input-rating">平均評価</label>
+                        <input type="number" id="input-rating" min="1" max="5" step="0.1" placeholder="例: 4.3">
+                    </div>
+                </div>
+                <button type="submit" id="submit-report-btn">この月のデータを保存</button>
+            </form>
+        </section>
+
+        <section class="kpi-row" id="kpi-row" aria-label="今月のサマリー"></section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>表示回数の推移</h2>
+                <div class="legend" id="line-legend"></div>
+            </div>
+            <div class="chart-wrap">
+                <svg id="line-chart" class="viz-root" role="img" aria-label="検索・マップ表示回数の月次推移"></svg>
+                <div id="line-tooltip" class="chart-tooltip" hidden></div>
+            </div>
+            <p id="line-empty" class="empty-note" hidden>データがまだありません。上のフォームから月次データを追加してください。</p>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>最新月のアクション内訳</h2>
+                <div class="legend" id="bar-legend"></div>
+            </div>
+            <div class="chart-wrap">
+                <svg id="bar-chart" class="viz-root" role="img" aria-label="最新月のアクション種別ごとの件数"></svg>
+                <div id="bar-tooltip" class="chart-tooltip" hidden></div>
+            </div>
+            <p id="bar-empty" class="empty-note" hidden>データがまだありません。</p>
+        </section>
+
+        <section class="card">
+            <h2>月別レコード一覧</h2>
+            <div class="table-wrap">
+                <table id="records-table">
+                    <thead>
+                        <tr>
+                            <th>月</th>
+                            <th>検索表示</th>
+                            <th>マップ表示</th>
+                            <th>クリック</th>
+                            <th>電話</th>
+                            <th>ルート検索</th>
+                            <th>クチコミ</th>
+                            <th>評価</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-tbody"></tbody>
+                </table>
+            </div>
+            <p id="records-empty" class="empty-note" hidden>まだ記録がありません。</p>
+        </section>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
