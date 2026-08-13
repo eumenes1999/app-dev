@@ -97,8 +97,10 @@ header .sub {
 
 .card-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
+    gap: 0.4rem 1rem;
     margin-bottom: 1rem;
 }
 .card-header h2 { margin-bottom: 0; }
@@ -234,6 +236,12 @@ header .sub {
     height: 260px;
     display: block;
     overflow: visible;
+}
+
+.viz-root rect:focus-visible,
+.viz-root g:focus-visible {
+    outline: 2px solid var(--series-1);
+    outline-offset: 2px;
 }
 
 .chart-tooltip {

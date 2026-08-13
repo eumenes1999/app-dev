@@ -56,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${Number(m)}月`;
     }
 
+    function nextMonthStr(monthIso) {
+        const [y, m] = monthIso.split('-').map(Number);
+        const d = new Date(y, m, 1); // m は1始まりの「今月」なので、Dateのmonthに渡すと自動的に翌月になる
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
     function formatNumber(n) {
         return Math.round(n).toLocaleString('ja-JP');
     }
@@ -125,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reports.sort((a, b) => a.month.localeCompare(b.month));
 
         reportForm.reset();
+        monthInput.value = nextMonthStr(monthIso); // 連続入力しやすいよう翌月を自動セット
         renderAll();
         showToast(`${monthLabel(monthIso)}のデータを保存しました`);
     });
@@ -194,11 +201,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     }
 
+    // viewBox(W×H)と実際の描画矩形(svgRect)から、preserveAspectRatio="xMidYMid meet"による
+    // 拡大縮小率と、アスペクト比の違いで生じるレターボックス分のオフセットを求める。
+    // (svgRectの幅・高さは、CSS上のサイズとviewBoxのアスペクト比が食い違う場合に
+    //  横または縦のどちらかにレターボックス(余白)ができるため、単純な幅比・高さ比では
+    //  ズレる。両者に共通する縮小率＝小さい方の比率を使うのがポイント)
+    function getSvgFit(svgRect, W, H) {
+        const scale = Math.min(svgRect.width / W, svgRect.height / H);
+        const offsetX = (svgRect.width - W * scale) / 2;
+        const offsetY = (svgRect.height - H * scale) / 2;
+        return { scale, offsetX, offsetY };
+    }
+    // viewBox基準のSVG内部座標 → ページ上のCSS px座標（clientX/Y相当）に変換する。
+    function svgPointToClient(svgEl, W, H, svgX, svgY) {
+        const svgRect = svgEl.getBoundingClientRect();
+        const { scale, offsetX, offsetY } = getSvgFit(svgRect, W, H);
+        return { x: svgRect.left + offsetX + svgX * scale, y: svgRect.top + offsetY + svgY * scale };
+    }
+    // ページ上のCSS px座標（pointerイベントのclientX/Y） → viewBox基準のSVG内部座標に変換する。
+    function clientPointToSvg(svgEl, W, H, clientX, clientY) {
+        const svgRect = svgEl.getBoundingClientRect();
+        const { scale, offsetX, offsetY } = getSvgFit(svgRect, W, H);
+        return { x: (clientX - svgRect.left - offsetX) / scale, y: (clientY - svgRect.top - offsetY) / scale };
+    }
+
     // ---- 折れ線チャート：表示回数の推移（検索 / マップ） ----
     function renderLineChart() {
         const svg = d3.select(lineChartSvg);
         svg.selectAll('*').remove();
         lineLegend.innerHTML = '';
+        lineTooltip.hidden = true; // 再描画でヒット領域が作り直されるため、古いツールチップの残留を防ぐ
 
         if (reports.length === 0) {
             lineEmpty.hidden = false;
@@ -318,13 +350,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr('x', padL).attr('y', padT)
             .attr('width', W - padL - padR).attr('height', H - padT - padB)
             .attr('fill', 'transparent')
-            .style('cursor', 'crosshair');
+            .style('cursor', 'crosshair')
+            .attr('tabindex', 0)
+            .attr('role', 'img')
+            .attr('aria-label', '表示回数の推移グラフ。左右矢印キーで月を選択すると、その月の検索表示回数とマップ表示回数を確認できます。');
 
-        function showLineTooltip(evt) {
-            const svgRect = lineChartSvg.getBoundingClientRect();
-            const px = (evt.clientX - svgRect.left) / svgRect.width * W;
-            const eachBand = (W - padL - padR) / Math.max(months.length - 1, 1);
-            let idx = Math.round((px - padL) / eachBand);
+        function renderTooltipForIndex(idx) {
             idx = Math.max(0, Math.min(months.length - 1, idx));
             const d = reports[idx];
 
@@ -354,17 +385,38 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const wrap = lineChartSvg.parentElement.getBoundingClientRect();
-            const tx = svgRect.left + (x(d.month) / W) * svgRect.width;
-            lineTooltip.style.left = `${tx - wrap.left}px`;
-            lineTooltip.style.top = `${padT - wrap.top - 10}px`;
+            const pt = svgPointToClient(lineChartSvg, W, H, x(d.month), padT);
+            lineTooltip.style.left = `${pt.x - wrap.left}px`;
+            lineTooltip.style.top = `${pt.y - wrap.top - 10}px`;
+            return idx;
+        }
+        function showLineTooltip(evt) {
+            const svgPt = clientPointToSvg(lineChartSvg, W, H, evt.clientX, evt.clientY);
+            const eachBand = (W - padL - padR) / Math.max(months.length - 1, 1);
+            const idx = Math.round((svgPt.x - padL) / eachBand);
+            focusedIndex = renderTooltipForIndex(idx);
         }
         function hideLineTooltip() {
             crosshair.style('opacity', 0);
             lineTooltip.hidden = true;
         }
+        let focusedIndex = months.length - 1;
         hitRect.on('pointermove', showLineTooltip)
             .on('pointerenter', showLineTooltip)
-            .on('pointerleave', hideLineTooltip);
+            .on('pointerleave', hideLineTooltip)
+            .on('focus', () => { focusedIndex = renderTooltipForIndex(focusedIndex); })
+            .on('blur', hideLineTooltip)
+            .on('keydown', (evt) => {
+                if (evt.key === 'ArrowLeft') {
+                    evt.preventDefault();
+                    focusedIndex = renderTooltipForIndex(focusedIndex - 1);
+                } else if (evt.key === 'ArrowRight') {
+                    evt.preventDefault();
+                    focusedIndex = renderTooltipForIndex(focusedIndex + 1);
+                } else if (evt.key === 'Escape') {
+                    hideLineTooltip();
+                }
+            });
     }
 
     // ---- 棒グラフ：最新月のアクション内訳 ----
@@ -372,6 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const svg = d3.select(barChartSvg);
         svg.selectAll('*').remove();
         barLegend.innerHTML = '';
+        barTooltip.hidden = true; // 再描画でヒット領域が作り直されるため、古いツールチップの残留を防ぐ
 
         if (reports.length === 0) {
             barEmpty.hidden = false;
@@ -468,12 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.appendChild(value);
                 barTooltip.appendChild(row);
 
-                const svgRect = barChartSvg.getBoundingClientRect();
                 const wrap = barChartSvg.parentElement.getBoundingClientRect();
-                const tx = svgRect.left + (cx / W) * svgRect.width;
-                const ty = svgRect.top + (by / H) * svgRect.height;
-                barTooltip.style.left = `${tx - wrap.left}px`;
-                barTooltip.style.top = `${ty - wrap.top - 10}px`;
+                const pt = svgPointToClient(barChartSvg, W, H, cx, by);
+                barTooltip.style.left = `${pt.x - wrap.left}px`;
+                barTooltip.style.top = `${pt.y - wrap.top - 10}px`;
             };
             const hideBarTooltip = () => {
                 rect.attr('opacity', 1);
