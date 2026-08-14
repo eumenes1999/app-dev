@@ -15,6 +15,7 @@
 - `アプリ開発 Falloutポートフォリオ/` — バックエンドなし
 - `アプリ開発 資格取得/` — バックエンドなし
 - `アプリ開発 MEO集客ダッシュボード/` — Supabase使用（`meo_reports`テーブル）。MEOレポート風のダミー月次指標を入力し、D3.jsで折れ線・棒グラフを可視化する練習アプリ
+- `アプリ開発 リアルタイム付箋ボード/` — Supabase使用（`sticky_notes`テーブル、Realtime、Edge Functions）。全員で同じボードを共同編集する付箋アプリ。Postgres Changes/Presence/Broadcastの3機能を練習目的で使い分けている。他アプリと異なり`auth.uid() = user_id`のプライベート分離ではなく、認証済みなら誰でも全ノートを編集できる共有ボード型のRLS。「AIで要約」機能はSupabase Edge Function(`supabase/functions/summarize-notes/`)経由でClaude API(`claude-haiku-4-5`)を呼ぶ構成(APIキーはEdge Function側のシークレット、クライアントには置かない)
 - `css-motion-gallery/` — CSSモーション（フェードイン・バウンス・スピナー等20種）の一覧・可視化サイト。バックエンドなし。CSSナレッジ扱いのため実体はこのフォルダ配下ではなく `01_Webサイト・LP/03_CSSナレッジ/css-motion-gallery/`（2026-08-02作成）
 
 ## Supabase運用ルール（無料枠前提）

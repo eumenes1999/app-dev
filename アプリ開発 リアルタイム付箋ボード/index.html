@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>リアルタイム付箋ボード</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0d0d10">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div id="init-error" class="init-error" hidden></div>
+    <div id="toast" class="toast" hidden></div>
+
+    <div class="app-container" id="app-container" hidden>
+        <header>
+            <p class="eyebrow">Supabase Realtime 練習用アプリ</p>
+            <h1>リアルタイム付箋ボード</h1>
+            <p class="sub">みんなで同じボードに付箋を貼って動かせます。複数タブを開くと、それぞれ別の参加者として同期の様子を確認できます。</p>
+        </header>
+
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button type="button" id="add-note-btn">＋ 付箋を追加</button>
+                <button type="button" id="summarize-btn">✨ AIで要約</button>
+            </div>
+            <div class="presence-badge" id="presence-badge" aria-live="polite">
+                <span id="presence-count">1</span>人が閲覧中
+                <span class="presence-dots" id="presence-dots"></span>
+            </div>
+        </div>
+
+        <div class="summary-panel" id="summary-panel" hidden>
+            <div class="summary-panel-header">
+                <h2>AIによる要約</h2>
+                <button type="button" id="summary-close-btn" aria-label="閉じる">✕</button>
+            </div>
+            <div class="summary-panel-body" id="summary-panel-body"></div>
+        </div>
+
+        <div class="board-wrap">
+            <div class="board" id="board">
+                <div class="board-empty" id="board-empty">付箋がまだありません。「＋ 付箋を追加」から始めてください。</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
