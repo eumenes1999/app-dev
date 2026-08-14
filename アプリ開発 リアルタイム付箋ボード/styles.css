@@ -272,6 +272,11 @@ header .sub {
 .sticky-note:focus-within .note-delete-btn { opacity: 1; }
 .note-delete-btn:hover { color: #b8342f; }
 
+/* タッチデバイスには:hoverが無く削除ボタンが発見できないため、常に控えめに見えるようにする */
+@media (hover: none) {
+    .note-delete-btn { opacity: 0.55; }
+}
+
 /* 付箋カラー(固定パレット、テーマに追従しない) */
 .note-yellow { background: #ffd966; }
 .note-pink   { background: #ff9eb0; }

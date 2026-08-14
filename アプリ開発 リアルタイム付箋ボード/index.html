@@ -6,9 +6,12 @@
     <title>リアルタイム付箋ボード</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0d0d10">
+    <!-- ライト/ダークでページ本体の配色(styles.cssの--page-plane)と食い違わないよう出し分ける -->
+    <meta name="theme-color" content="#f5f5f2" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0d0d10" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
     <div id="init-error" class="init-error" hidden></div>

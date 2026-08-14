@@ -24,9 +24,11 @@ create policy "select all sticky notes"
   on public.sticky_notes for select
   using (true);
 
+-- created_byはリクエストのpayloadで自由に書ける値なので、他人になりすましたinsertを
+-- 防ぐため「auth.uid()と一致する場合のみ」を明示的にチェックする(デフォルト値任せにしない)
 create policy "insert sticky notes as authenticated"
   on public.sticky_notes for insert
-  with check (auth.uid() is not null);
+  with check (auth.uid() is not null and created_by = auth.uid());
 
 create policy "update any sticky note as authenticated"
   on public.sticky_notes for update
@@ -36,6 +38,21 @@ create policy "delete any sticky note as authenticated"
   on public.sticky_notes for delete
   using (auth.uid() is not null);
 
+-- 誰でも他人の付箋を編集できる共有ボード設計だが、「誰が書いたか」を示すcreated_by
+-- 自体は更新時に書き換えられないようトリガーで固定する(なりすまし対策の一環)
+create or replace function public.sticky_notes_lock_created_by()
+returns trigger as $$
+begin
+  new.created_by := old.created_by;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists sticky_notes_lock_created_by_trigger on public.sticky_notes;
+create trigger sticky_notes_lock_created_by_trigger
+  before update on public.sticky_notes
+  for each row execute function public.sticky_notes_lock_created_by();
+
 -- Realtime(Postgres Changes)購読を有効化する場合、Supabaseダッシュボード側の
--- Database > Replication で public.sticky_notes テーブルのRealtimeをONにしてください
--- (2024年以降のSupabaseプロジェクトはテーブル追加時にデフォルトでは購読対象外のことがあるため)。
+-- Database > Publications で public.sticky_notes テーブルの配信をONにしてください
+-- (テーブル追加時にデフォルトでは配信対象外になっていることがあるため)。
