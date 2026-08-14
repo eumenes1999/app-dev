@@ -74,7 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- データ層 ----
-    async function loadNotes() {
+    // 初回接続時・Realtime再接続時の両方でここを通す(切断中に他セッションが行った
+    // 変更を取りこぼしたまま放置しないため、フェッチ結果と現在の表示を突き合わせて同期する)
+    async function syncNotes() {
         const { data, error } = await supabase
             .from('sticky_notes')
             .select('*')
@@ -84,7 +86,35 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('付箋の読み込みに失敗しました');
             return;
         }
-        data.forEach(row => notesById.set(row.id, rowToNote(row)));
+
+        const freshIds = new Set(data.map(row => row.id));
+        Array.from(notesById.keys()).forEach(id => {
+            if (!freshIds.has(id) && draggingId !== id) {
+                notesById.delete(id);
+                unmountNote(id);
+            }
+        });
+
+        data.forEach(row => {
+            const note = rowToNote(row);
+            if (!notesById.has(note.id)) {
+                notesById.set(note.id, note);
+                mountNote(note);
+                return;
+            }
+            if (draggingId === note.id) return;
+            notesById.set(note.id, note);
+            const el = noteEls.get(note.id);
+            if (!el) return;
+            el.style.left = `${note.x}%`;
+            el.style.top = `${note.y}%`;
+            const textarea = el.querySelector('.note-text');
+            if (textarea && document.activeElement !== textarea) {
+                textarea.value = note.text;
+            }
+        });
+
+        updateEmptyState();
     }
 
     async function addNote() {
@@ -113,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateNoteText(id, text) {
         const note = notesById.get(id);
         if (!note) return;
+        const previousText = note.text;
         note.text = text;
         const { error } = await supabase
             .from('sticky_notes')
@@ -121,12 +152,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (error) {
             console.error(error);
             showToast('メモの保存に失敗しました');
+            note.text = previousText;
+            const textarea = noteEls.get(id)?.querySelector('.note-text');
+            if (textarea && document.activeElement !== textarea) {
+                textarea.value = previousText;
+            }
         }
     }
 
     async function commitNotePosition(id, x, y) {
         const note = notesById.get(id);
         if (!note) return;
+        const previousX = note.x;
+        const previousY = note.y;
         note.x = x;
         note.y = y;
         const { error } = await supabase
@@ -136,6 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (error) {
             console.error(error);
             showToast('位置の保存に失敗しました');
+            note.x = previousX;
+            note.y = previousY;
+            const el = noteEls.get(id);
+            if (el && draggingId !== id) {
+                el.style.left = `${previousX}%`;
+                el.style.top = `${previousY}%`;
+            }
         }
     }
 
@@ -235,16 +280,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     boardChannel?.send({ type: 'broadcast', event: 'note-drag', payload: { id, x: nx, y: ny, from: myUserId } });
                 }
             }
-            function onUp(upEvt) {
+            function endDrag(endEvt) {
                 window.removeEventListener('pointermove', onMove);
-                window.removeEventListener('pointerup', onUp);
-                handle.releasePointerCapture(upEvt.pointerId);
+                window.removeEventListener('pointerup', endDrag);
+                window.removeEventListener('pointercancel', endDrag);
+                try { handle.releasePointerCapture(endEvt.pointerId); } catch { /* 既に解放済みなら無視 */ }
                 el.classList.remove('dragging');
                 draggingId = null;
+                // pointercancel(タッチのジェスチャー割り込み等)でも、Broadcastで
+                // 既に周知済みの座標とDBがズレたままにならないよう同じく確定させる
                 if (pending) commitNotePosition(id, pending.x, pending.y);
             }
             window.addEventListener('pointermove', onMove);
-            window.addEventListener('pointerup', onUp);
+            window.addEventListener('pointerup', endDrag);
+            window.addEventListener('pointercancel', endDrag);
         });
     }
 
@@ -374,9 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
         myUserId = session.user.id;
 
         appContainer.hidden = false;
-        await loadNotes();
-        notesById.forEach(note => mountNote(note));
-        updateEmptyState();
 
         boardChannel = supabase.channel('board:main', {
             config: { presence: { key: myUserId }, broadcast: { self: false } },
@@ -398,7 +444,14 @@ document.addEventListener('DOMContentLoaded', () => {
             .on('presence', { event: 'leave' }, ({ key }) => removeCursor(key))
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
+                    // 初回接続・再接続いずれもここを通る。再接続時は切断中に
+                    // 他セッションが行った変更を取りこぼしている可能性があるため、都度syncNotesで補う
+                    await syncNotes();
                     await boardChannel.track({ color: myColor() });
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    showToast('接続が不安定です。再接続を試みています…');
+                } else if (status === 'CLOSED') {
+                    showToast('接続が切断されました');
                 }
             });
 

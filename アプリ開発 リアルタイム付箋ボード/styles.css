@@ -171,29 +171,37 @@ header .sub {
 }
 
 /* ボード */
+.board-viewport {
+    position: relative;
+}
+
 .board-wrap {
     background: var(--surface-1);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-soft);
     padding: 8px;
+    /* 付箋が増えて画面に収まらなくなっても迷子にならないよう、キャンバス自体は
+       ビューポートより大きく作ってこの枠内でスクロールさせる(ズームは対象外)。
+       空状態メッセージ(.board-empty)はスクロールに巻き込まれないよう、あえてこの
+       スクロールコンテナの外(.board-viewport直下)に置いている */
+    overflow: auto;
+    height: min(70vh, 640px);
+    min-height: 420px;
 }
 
 .board {
     position: relative;
-    width: 100%;
-    height: min(70vh, 640px);
-    min-height: 420px;
+    width: 2200px;
+    height: 1400px;
     border-radius: calc(var(--border-radius) - 8px);
     background-image: radial-gradient(var(--board-dot) 1.5px, transparent 1.5px);
     background-size: 22px 22px;
-    overflow: hidden;
-    touch-action: none;
 }
 
 .board-empty {
     position: absolute;
-    inset: 0;
+    inset: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -331,6 +339,6 @@ header .sub {
 }
 
 @media (max-width: 480px) {
-    .board { height: 60vh; min-height: 360px; }
+    .board-wrap { height: 60vh; min-height: 360px; }
     .sticky-note { width: 130px; min-height: 110px; }
 }

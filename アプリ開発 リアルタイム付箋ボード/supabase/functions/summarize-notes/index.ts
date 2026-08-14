@@ -6,6 +6,12 @@
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const ANTHROPIC_MODEL = "claude-haiku-4-5";
 
+// このFunctionはanon keyさえあれば誰でも(このアプリ経由でなくても)直接呼び出せるため、
+// 悪意あるリクエストで入力トークン課金を無制限に消費されないよう上限を設ける
+const MAX_NOTES = 50;
+const MAX_NOTE_LENGTH = 500;
+const MAX_TOTAL_LENGTH = 6000;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -26,7 +32,12 @@ Deno.serve(async (req) => {
   let notes: string[];
   try {
     const body = await req.json();
-    notes = Array.isArray(body.notes) ? body.notes.filter((t: unknown) => typeof t === "string" && t.trim()) : [];
+    notes = Array.isArray(body.notes)
+      ? body.notes
+          .filter((t: unknown) => typeof t === "string" && t.trim())
+          .slice(0, MAX_NOTES)
+          .map((t: string) => t.trim().slice(0, MAX_NOTE_LENGTH))
+      : [];
   } catch {
     return new Response(
       JSON.stringify({ error: "リクエストボディが不正です" }),
@@ -41,7 +52,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  const notesList = notes.map((t, i) => `${i + 1}. ${t}`).join("\n");
+  const notesList = notes.map((t, i) => `${i + 1}. ${t}`).join("\n").slice(0, MAX_TOTAL_LENGTH);
   const prompt =
     `以下は複数人が共同編集の付箋ボードに書いたメモです。要点を3〜5行程度で日本語で要約してください。箇条書きで、誰が書いたかの推測は含めないでください。\n\n${notesList}`;
 
